@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#0f172a">
+    <title>PromoTracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+:root {
+    --bg-dark: #0f172a;
+    --bg-card: rgba(30, 41, 59, 0.7);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent: #10b981;
+    --accent-glow: rgba(16, 185, 129, 0.4);
+    --danger: #ef4444;
+    --border: rgba(255, 255, 255, 0.1);
+    --glass-blur: blur(12px);
+    --transition: all 0.3s ease;
+    --bg-modal: #1e293b;
+    --bg-app-gradient: radial-gradient(circle at top right, #1e293b 0%, var(--bg-dark) 100%);
+}
+
+.light-mode {
+    --bg-dark: #f1f5f9;
+    --bg-card: rgba(255, 255, 255, 0.7);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --border: rgba(0, 0, 0, 0.1);
+    --bg-modal: #ffffff;
+    --bg-app-gradient: radial-gradient(circle at top right, #e2e8f0 0%, var(--bg-dark) 100%);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* App Container */
+#app {
+    width: 100%;
+    max-width: 600px; /* limits width on desktop to look like mobile */
+    margin: 0 auto;
+    position: relative;
+    min-height: 100vh;
+    background: var(--bg-app-gradient);
+}
+
+/* Screens */
+.screen {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-bottom: calc(140px + env(safe-area-inset-bottom)); /* space for fab + nav */
+    animation: fadeIn 0.3s ease-out;
+}
+
+.screen.active {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography & Headers */
+header {
+    padding: 30px 20px 20px;
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+}
+
+p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.header-with-back {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-with-back h1 {
+    font-size: 22px;
+}
+
+/* Buttons */
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.icon-btn:active {
+    background: var(--border);
+}
+
+.text-danger {
+    color: var(--danger);
+}
+
+/* FAB */
+.fab {
+    position: fixed;
+    bottom: calc(90px + env(safe-area-inset-bottom));
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    box-shadow: 0 8px 20px var(--accent-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: var(--transition);
+}
+
+.fab:active {
+    transform: scale(0.95);
+}
+
+/* Card Grid */
+main {
+    padding: 0 20px;
+    flex: 1;
+}
+
+.card-grid {
+    display: grid;
+    gap: 15px;
+    grid-template-columns: 1fr;
+}
+
+/* Cards (Glassmorphism) */
+.card {
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.card:active {
+    transform: scale(0.98);
+}
+
+.card-info h3 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.card-info p {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.card-target {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+/* Progress Section */
+.progress-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 30px 20px;
+}
+
+.progress-ring-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.progress-ring {
+    transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+    stroke: var(--border);
+}
+
+.progress-ring-fill {
+    stroke: var(--accent);
+    stroke-dasharray: 314; /* 2 * pi * r (50) */
+    stroke-dashoffset: 314;
+    transition: stroke-dashoffset 0.8s ease-in-out;
+}
+
+.progress-text {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-text span {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.progress-text small {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.progress-stats {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat .label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.stat .value {
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.text-accent {
+    color: var(--accent);
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+}
+
+.tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tab.active {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+/* Items List */
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.checkbox.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.checkbox svg {
+    color: #fff;
+    width: 16px;
+    height: 16px;
+    opacity: 0;
+}
+
+.checkbox.checked svg {
+    opacity: 1;
+}
+
+.item-info h4 {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.item-info p {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.item-price {
+    font-weight: 600;
+}
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.modal {
+    background: var(--bg-modal);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal {
+    transform: translateY(0);
+}
+
+.modal h2 {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.modal p {
+    margin-bottom: 20px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.input-group input {
+    width: 100%;
+    background: rgba(128, 128, 128, 0.1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 15px;
+    color: var(--text-primary);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus, .input-group select:focus {
+    border-color: var(--accent);
+}
+
+.card-select {
+    width: 100%;
+    background: rgba(128, 128, 128, 0.1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 15px;
+    color: var(--text-primary);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+}
+.card-select option {
+    background: var(--bg-modal);
+    color: var(--text-primary);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.btn-text, .btn-primary {
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-text {
+    background: none;
+    color: var(--text-secondary);
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state svg {
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 600px;
+    height: calc(60px + env(safe-area-inset-bottom));
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 90;
+}
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    flex: 1;
+    height: 100%;
+    justify-content: center;
+    transition: color 0.3s ease;
+}
+.nav-item.active {
+    color: var(--accent);
+}
+
+/* Wallet Cards */
+.wallet-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 25px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+.wallet-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+    transform: translate(10%, 10%);
+    pointer-events: none;
+}
+.wallet-card-info h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+}
+.wallet-card-balance {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+}
+.wallet-card-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Receipts */
+.receipt-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    animation: fadeIn 0.2s ease-out;
+}
+.receipt-header {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.03);
+}
+.receipt-header:active {
+    background: rgba(255, 255, 255, 0.05);
+}
+.receipt-info h4 { font-size: 16px; font-weight: 500; }
+.receipt-info p { font-size: 12px; color: var(--text-secondary); }
+.receipt-total {
+    font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+}
+.receipt-items {
+    display: none;
+    padding: 0 15px 15px;
+    border-top: 1px solid var(--border);
+}
+.receipt-card.expanded .receipt-items {
+    display: flex; flex-direction: column; gap: 12px; margin-top: 15px;
+}
+.receipt-card.expanded .chevron { transform: rotate(180deg); }
+.chevron { transition: transform 0.3s ease; }
+
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Dashboard Screen -->
+        <div id="dashboard-screen" class="screen active">
+            <header style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1>PromoTracker</h1>
+                    <p>Track targets & maximize rewards</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="icon-btn text-danger" onclick="app.resetAll()" id="reset-all-btn" aria-label="Reset All" title="Reset All">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" onclick="app.toggleTheme()" id="theme-toggle" aria-label="Toggle Theme">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <!-- Sun Icon -->
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+            <main>
+                <div id="shops-list" class="card-grid">
+                    <!-- Shop cards will be rendered here -->
+                </div>
+            </main>
+            <button class="fab" onclick="ui.showModal('add-shop-modal')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+        </div>
+
+        <!-- Shop Detail Screen -->
+        <div id="shop-screen" class="screen">
+            <header class="header-with-back">
+                <button class="icon-btn" onclick="ui.showScreen('dashboard-screen')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h1 id="current-shop-name">Shop Name</h1>
+                        <button class="icon-btn" onclick="app.openEditShopModal()" style="padding: 4px; color: var(--text-secondary);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                    </div>
+                    <p id="current-shop-target">Target: $0.00</p>
+                </div>
+                <button class="icon-btn text-danger" onclick="app.deleteCurrentShop()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                </button>
+            </header>
+            <main>
+                <div class="progress-section">
+                    <div class="progress-ring-container">
+                        <svg class="progress-ring" width="120" height="120">
+                            <circle class="progress-ring-bg" stroke-width="8" fill="transparent" r="50" cx="60" cy="60" />
+                            <circle class="progress-ring-fill" stroke-width="8" fill="transparent" r="50" cx="60" cy="60" />
+                        </svg>
+                        <div class="progress-text">
+                            <span id="spent-amount">$0.00</span>
+                            <small>spent</small>
+                        </div>
+                    </div>
+                    <div class="progress-stats">
+                        <div class="stat">
+                            <span class="label">Est. Total</span>
+                            <span id="est-total" class="value">$0.00</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Remaining</span>
+                            <span id="remaining-amount" class="value text-accent">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="items-section">
+                    <div class="tabs">
+                        <button class="tab active" onclick="ui.switchTab('to-buy')" id="tab-to-buy">To Buy</button>
+                        <button class="tab" onclick="ui.switchTab('cart')" id="tab-cart">Cart</button>
+                        <button class="tab" onclick="ui.switchTab('bought')" id="tab-bought">Bought</button>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;">
+                        <div style="display: flex; align-items: center;">
+                            <span style="font-size: 14px; color: var(--text-secondary);" id="active-tab-label">To Buy Items</span>
+                            <button id="checkout-btn" class="btn-primary" style="display: none; padding: 6px 12px; margin-left: 10px; font-size: 12px; border-radius: 8px;" onclick="app.openCheckoutModal()">Pay</button>
+                        </div>
+                        <span style="font-weight: 600; font-size: 16px; color: var(--text-primary);" id="active-tab-total">$0.00</span>
+                    </div>
+
+                    <div id="items-list" class="items-list">
+                        <!-- Items rendered here -->
+                    </div>
+                </div>
+            </main>
+            <button class="fab" onclick="app.openAddItemModal()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+        </div>
+
+        <!-- Wallet Screen -->
+        <div id="wallet-screen" class="screen">
+            <header style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1>My Wallet</h1>
+                    <p>Track your gift cards & balances</p>
+                </div>
+            </header>
+            <main>
+                <div class="progress-section" style="margin-bottom: 20px; flex-direction: row; justify-content: space-around; padding: 20px;">
+                    <div class="stat">
+                        <span class="label">Total Balance</span>
+                        <span id="wallet-total" class="value text-accent" style="font-size: 24px;">$0.00</span>
+                    </div>
+                </div>
+                <div id="cards-list" class="card-grid">
+                    <!-- Cards rendered here -->
+                </div>
+            </main>
+            <button class="fab" onclick="ui.showModal('add-card-modal')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+        </div>
+
+        <!-- Modals -->
+        <div id="add-shop-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>New Shop / Promo</h2>
+                <form id="add-shop-form" onsubmit="app.handleAddShop(event)">
+                    <div class="input-group">
+                        <label>Shop Name</label>
+                        <input type="text" id="shop-name" required placeholder="e.g. Target, Sephora">
+                    </div>
+                    <div class="input-group">
+                        <label>Target Amount ($)</label>
+                        <input type="number" id="shop-target" step="0.01" required placeholder="100.00">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('add-shop-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="edit-shop-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Edit Shop / Promo</h2>
+                <form id="edit-shop-form" onsubmit="app.handleEditShop(event)">
+                    <div class="input-group">
+                        <label>Shop Name</label>
+                        <input type="text" id="edit-shop-name" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Target Amount ($)</label>
+                        <input type="number" id="edit-shop-target" step="0.01" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('edit-shop-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="add-item-modal" class="modal-overlay">
+            <div class="modal">
+                <h2 id="add-item-title">Add Item</h2>
+                <form id="add-item-form" onsubmit="app.handleAddItem(event)">
+                    <div class="input-group">
+                        <label>Item Name</label>
+                        <input type="text" id="item-name" required placeholder="e.g. Shampoo" list="item-history" oninput="app.handleItemNameInput(event, 'item-est-price', 'item-new-actual-price')">
+                    </div>
+                    <div class="input-group" style="flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 10px;">
+                        <input type="checkbox" id="item-is-weight" onchange="app.toggleWeightMode('add', this.checked)" style="width: auto;">
+                        <label for="item-is-weight" style="margin: 0; font-weight: normal;">Fresh Product (sold by weight)</label>
+                    </div>
+                    <div class="input-group" id="qty-group">
+                        <label id="item-qty-label">Quantity</label>
+                        <input type="number" id="item-qty" min="0.01" step="0.01" value="1" required>
+                    </div>
+                    <div class="input-group" id="est-price-group">
+                        <label id="item-est-price-label">Estimated Price ($)</label>
+                        <input type="number" id="item-est-price" step="0.01" required placeholder="15.00">
+                    </div>
+                    <div class="input-group" id="act-price-group" style="display: none;">
+                        <label>Actual Price ($)</label>
+                        <input type="number" id="item-new-actual-price" step="0.01" placeholder="15.00">
+                        <label style="margin-top: 15px;">Pay With</label>
+                        <select id="item-new-card" class="card-select">
+                            <option value="">None / Cash</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('add-item-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="edit-item-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Edit Item</h2>
+                <form id="edit-item-form" onsubmit="app.handleEditItem(event)">
+                    <input type="hidden" id="edit-item-id">
+                    <div class="input-group">
+                        <label>Item Name</label>
+                        <input type="text" id="edit-item-name" required list="item-history" oninput="app.handleItemNameInput(event, 'edit-item-price')">
+                    </div>
+                    <div class="input-group" style="flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 10px;">
+                        <input type="checkbox" id="edit-item-is-weight" onchange="app.toggleWeightMode('edit', this.checked)" style="width: auto;">
+                        <label for="edit-item-is-weight" style="margin: 0; font-weight: normal;">Fresh Product (sold by weight)</label>
+                    </div>
+                    <div class="input-group">
+                        <label id="edit-item-qty-label">Quantity</label>
+                        <input type="number" id="edit-item-qty" min="0.01" step="0.01" required>
+                    </div>
+                    <div class="input-group" id="edit-item-price-group">
+                        <label id="edit-item-price-label">Price ($)</label>
+                        <input type="number" id="edit-item-price" step="0.01" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('edit-item-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="actual-price-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Confirm Purchase</h2>
+                <p>Enter the actual price paid.</p>
+                <form id="actual-price-form" onsubmit="app.handleMarkBought(event)">
+                    <input type="hidden" id="buy-item-id">
+                    <div class="input-group">
+                        <label>Actual Price ($)</label>
+                        <input type="number" id="item-actual-price" step="0.01" required>
+                        <label style="margin-top: 15px;">Pay With</label>
+                        <select id="item-actual-card" class="card-select">
+                            <option value="">None / Cash</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('actual-price-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Mark Bought</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div id="add-card-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Add Card</h2>
+                <form id="add-card-form" onsubmit="app.handleAddCard(event)">
+                    <div class="input-group">
+                        <label>Card Name</label>
+                        <input type="text" id="card-name" required placeholder="e.g. Target Gift Card">
+                    </div>
+                    <div class="input-group">
+                        <label>Current Balance ($)</label>
+                        <input type="number" id="card-balance" step="0.01" required placeholder="50.00">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('add-card-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="adjust-balance-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Adjust Balance</h2>
+                <form id="adjust-balance-form" onsubmit="app.handleAdjustBalance(event)">
+                    <input type="hidden" id="adjust-card-id">
+                    <div class="input-group">
+                        <label>New Balance ($)</label>
+                        <input type="number" id="card-new-balance" step="0.01" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('adjust-balance-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="checkout-cart-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Checkout Cart</h2>
+                <p>Total: <span id="checkout-cart-total" style="font-weight: bold; color: var(--accent); font-size: 20px;">$0.00</span></p>
+                <form id="checkout-cart-form" onsubmit="app.handleCheckoutCart(event)">
+                    <div id="split-payments-container" style="margin-top: 15px;">
+                        <!-- Rows added via JS -->
+                    </div>
+                    <button type="button" class="btn-text" onclick="app.addSplitPaymentRow()" style="margin-top: 10px; width: 100%; text-align: center; color: var(--accent);">+ Add Split Payment</button>
+                    <div class="modal-actions" style="margin-top: 20px;">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('checkout-cart-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Confirm Checkout</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <datalist id="item-history"></datalist>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav" id="main-nav">
+            <button class="nav-item active" id="nav-dashboard-screen" onclick="ui.showScreen('dashboard-screen')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <span>Shops</span>
+            </button>
+            <button class="nav-item" id="nav-wallet-screen" onclick="ui.showScreen('wallet-screen')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                <span>Wallet</span>
+            </button>
+        </nav>
+    </div>
+    <script>
+// Data Management
+let shops = JSON.parse(localStorage.getItem('promo_shops')) || [];
+let wallets = JSON.parse(localStorage.getItem('promo_wallets')) || [];
+let currentShopId = null;
+let currentTab = 'to-buy';
+let itemHistoryCache = {};
+
+const saveToLocal = () => {
+    localStorage.setItem('promo_shops', JSON.stringify(shops));
+    localStorage.setItem('promo_wallets', JSON.stringify(wallets));
+    if (typeof app !== 'undefined' && app.updateAutocompleteHistory) {
+        app.updateAutocompleteHistory();
+    }
+};
+
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
+const formatMoney = (amount) => {
+    return '$' + parseFloat(amount).toFixed(2);
+};
+
+// UI Controller
+const ui = {
+    showScreen: (screenId) => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        
+        // Update Bottom Nav
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const navItem = document.getElementById('nav-' + screenId);
+        if (navItem) navItem.classList.add('active');
+
+        if (screenId === 'dashboard-screen') {
+            app.renderDashboard();
+            currentShopId = null;
+        } else if (screenId === 'wallet-screen') {
+            app.renderWallet();
+        }
+    },
+    
+    showModal: (modalId) => {
+        document.getElementById(modalId).classList.add('active');
+    },
+    
+    hideModal: (modalId) => {
+        document.getElementById(modalId).classList.remove('active');
+    },
+
+    switchTab: (tabId) => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const selectedTab = document.getElementById(`tab-${tabId}`);
+        if (selectedTab) selectedTab.classList.add('active');
+        currentTab = tabId;
+        app.renderItems();
+    }
+};
+
+// App Logic
+const app = {
+    init: () => {
+        const theme = localStorage.getItem('promo_theme');
+        if (theme === 'light') {
+            document.body.classList.add('light-mode');
+            app.updateThemeIcon('light');
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', '#f1f5f9');
+            }
+        } else {
+            app.updateThemeIcon('dark');
+        }
+        
+        app.renderDashboard();
+        app.renderWallet();
+        app.updateAutocompleteHistory();
+    },
+
+    toggleTheme: () => {
+        document.body.classList.toggle('light-mode');
+        const isLight = document.body.classList.contains('light-mode');
+        localStorage.setItem('promo_theme', isLight ? 'light' : 'dark');
+        app.updateThemeIcon(isLight ? 'light' : 'dark');
+        
+        // Update theme color for mobile status bar
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', isLight ? '#f1f5f9' : '#0f172a');
+        }
+    },
+
+    updateThemeIcon: (theme) => {
+        const btn = document.getElementById('theme-toggle');
+        if (!btn) return;
+        
+        if (theme === 'light') {
+            // Moon Icon
+            btn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>`;
+        } else {
+            // Sun Icon
+            btn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>`;
+        }
+    },
+
+    updateAutocompleteHistory: () => {
+        itemHistoryCache = {};
+        const datalist = document.getElementById('item-history');
+        if (!datalist) return;
+        
+        shops.forEach(shop => {
+            shop.items.forEach(item => {
+                if (item.name) {
+                    itemHistoryCache[item.name.toLowerCase()] = item.estPrice;
+                }
+            });
+        });
+        
+        datalist.innerHTML = '';
+        Object.keys(itemHistoryCache).forEach(name => {
+            const option = document.createElement('option');
+            const displayTitle = name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            option.value = displayTitle;
+            datalist.appendChild(option);
+        });
+    },
+
+    handleItemNameInput: (event, estPriceId, actPriceId) => {
+        const inputVal = event.target.value.toLowerCase();
+        if (itemHistoryCache.hasOwnProperty(inputVal)) {
+            const price = itemHistoryCache[inputVal];
+            const estInput = document.getElementById(estPriceId);
+            if (estInput && !estInput.value) estInput.value = price;
+            
+            if (actPriceId) {
+                const actInput = document.getElementById(actPriceId);
+                if (actInput && !actInput.value) actInput.value = price;
+            }
+        }
+    },
+
+    // --- Dashboard ---
+    renderDashboard: () => {
+        const list = document.getElementById('shops-list');
+        list.innerHTML = '';
+        
+        if (shops.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <p>No shops yet. Add one to start tracking!</p>
+                </div>`;
+            return;
+        }
+
+        shops.forEach(shop => {
+            const spent = shop.items.filter(i => i.status === 'cart').reduce((acc, i) => acc + (i.estPrice * (i.qty || 1)), 0);
+            
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.onclick = () => app.openShop(shop.id);
+            card.innerHTML = `
+                <div class="card-info">
+                    <h3>${shop.name}</h3>
+                    <p>${shop.items.length} items &bull; ${formatMoney(spent)} in cart</p>
+                </div>
+                <div class="card-target">
+                    ${formatMoney(shop.target)}
+                </div>
+            `;
+            list.appendChild(card);
+        });
+    },
+
+    handleAddShop: (e) => {
+        e.preventDefault();
+        const name = document.getElementById('shop-name').value;
+        const target = parseFloat(document.getElementById('shop-target').value);
+        
+        shops.push({
+            id: generateId(),
+            name,
+            target,
+            items: []
+        });
+        
+        saveToLocal();
+        e.target.reset();
+        ui.hideModal('add-shop-modal');
+        app.renderDashboard();
+    },
+
+    openEditShopModal: () => {
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+        document.getElementById('edit-shop-name').value = shop.name;
+        document.getElementById('edit-shop-target').value = shop.target;
+        ui.showModal('edit-shop-modal');
+    },
+
+    handleEditShop: (e) => {
+        e.preventDefault();
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+
+        shop.name = document.getElementById('edit-shop-name').value;
+        shop.target = parseFloat(document.getElementById('edit-shop-target').value);
+        
+        saveToLocal();
+        ui.hideModal('edit-shop-modal');
+        app.updateShopHeader();
+        app.updateProgress();
+    },
+
+    // --- Shop Detail ---
+    openShop: (shopId) => {
+        currentShopId = shopId;
+        currentTab = 'to-buy';
+        // Reset tabs visually
+        document.querySelectorAll('.tab').forEach((t) => {
+            if (t.id === 'tab-to-buy') t.classList.add('active');
+            else t.classList.remove('active');
+        });
+
+        ui.showScreen('shop-screen');
+        app.updateShopHeader();
+        app.renderItems();
+        app.updateProgress();
+    },
+
+    deleteCurrentShop: () => {
+        if (confirm('Are you sure you want to delete this shop?')) {
+            shops = shops.filter(s => s.id !== currentShopId);
+            saveToLocal();
+            ui.showScreen('dashboard-screen');
+        }
+    },
+
+    resetAll: () => {
+        if (confirm('Are you sure you want to delete all shops and items? This action cannot be undone.')) {
+            shops = [];
+            saveToLocal();
+            app.renderDashboard();
+        }
+    },
+
+    updateShopHeader: () => {
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+        document.getElementById('current-shop-name').innerText = shop.name;
+        document.getElementById('current-shop-target').innerText = `Target: ${formatMoney(shop.target)}`;
+    },
+
+    updateProgress: () => {
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+
+        const estTotal = shop.items.filter(i => i.status !== 'bought').reduce((acc, i) => acc + (i.estPrice * (i.qty || 1)), 0);
+        const spent = shop.items.filter(i => i.status === 'cart').reduce((acc, i) => acc + (i.estPrice * (i.qty || 1)), 0);
+        const remaining = shop.target - spent;
+
+        document.getElementById('spent-amount').innerText = formatMoney(spent);
+        document.getElementById('est-total').innerText = formatMoney(estTotal);
+        
+        const remEl = document.getElementById('remaining-amount');
+        remEl.innerText = remaining < 0 ? `+${formatMoney(Math.abs(remaining))}` : formatMoney(remaining);
+        remEl.style.color = remaining < 0 ? 'var(--danger)' : 'var(--accent)';
+
+        // Update Ring
+        const ring = document.querySelector('.progress-ring-fill');
+        const circumference = 314; // 2 * pi * 50
+        const percent = Math.min((spent / shop.target) * 100, 100);
+        const offset = circumference - (percent / 100) * circumference;
+        ring.style.strokeDashoffset = offset;
+    },
+
+    // --- Items ---
+    renderItems: () => {
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+
+        const list = document.getElementById('items-list');
+        list.innerHTML = '';
+
+        let filteredItems = shop.items;
+        let tabLabel = 'All Items';
+        let tabTotal = 0;
+
+        // Migration & Defaults
+        shop.items.forEach(i => {
+            if (i.status === undefined) i.status = i.bought ? 'bought' : 'to-buy';
+            if (i.qty === undefined) i.qty = 1;
+        });
+
+        if (currentTab === 'to-buy') {
+            filteredItems = shop.items.filter(i => i.status === 'to-buy');
+            tabLabel = 'To Buy Items';
+            tabTotal = filteredItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+            document.getElementById('checkout-btn').style.display = 'none';
+        } else if (currentTab === 'cart') {
+            filteredItems = shop.items.filter(i => i.status === 'cart');
+            tabLabel = 'Cart Items';
+            tabTotal = filteredItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+            document.getElementById('checkout-btn').style.display = 'block';
+        } else if (currentTab === 'bought') {
+            filteredItems = shop.items.filter(i => i.status === 'bought');
+            tabLabel = 'Bought Items';
+            tabTotal = filteredItems.reduce((acc, i) => acc + (i.actualPrice * i.qty), 0);
+            document.getElementById('checkout-btn').style.display = 'none';
+        }
+
+        const labelEl = document.getElementById('active-tab-label');
+        const totalEl = document.getElementById('active-tab-total');
+        if (labelEl) labelEl.innerText = tabLabel;
+        if (totalEl) totalEl.innerText = formatMoney(tabTotal);
+
+        if (filteredItems.length === 0) {
+            list.innerHTML = `<div class="empty-state"><p>No items in this list.</p></div>`;
+            return;
+        }
+
+        const checkIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+        if (currentTab === 'bought') {
+            const receipts = {};
+            filteredItems.forEach(i => {
+                const rid = i.receiptId || 'legacy';
+                if (!receipts[rid]) receipts[rid] = { items: [], total: 0, date: i.boughtAt || null };
+                receipts[rid].items.push(i);
+                receipts[rid].total += (i.actualPrice * i.qty);
+            });
+
+            const receiptArray = Object.keys(receipts).map(id => ({ id, ...receipts[id] })).sort((a, b) => {
+                if (a.id === 'legacy') return 1;
+                if (b.id === 'legacy') return -1;
+                return new Date(b.date) - new Date(a.date);
+            });
+
+            receiptArray.forEach(receipt => {
+                const rEl = document.createElement('div');
+                rEl.className = 'receipt-card';
+                rEl.id = `receipt-${receipt.id}`;
+                
+                let dateStr = 'Legacy Purchases';
+                let methodsHtml = '';
+                if (receipt.id !== 'legacy') {
+                    if (receipt.date) {
+                        const d = new Date(receipt.date);
+                        dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    }
+                    if (receipt.items[0] && receipt.items[0].paymentMethods) {
+                        methodsHtml = `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Paid with: ${receipt.items[0].paymentMethods.join(', ')}</div>`;
+                    }
+                }
+
+                rEl.innerHTML = `
+                    <div class="receipt-header" onclick="app.toggleReceipt('${receipt.id}')">
+                        <div class="receipt-info">
+                            <h4>Receipt</h4>
+                            <p>${dateStr}</p>
+                            ${methodsHtml}
+                        </div>
+                        <div class="receipt-total">
+                            ${formatMoney(receipt.total)}
+                            <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                    </div>
+                    <div class="receipt-items" id="receipt-items-${receipt.id}">
+                    </div>
+                `;
+                list.appendChild(rEl);
+
+                const itemsContainer = rEl.querySelector('.receipt-items');
+                receipt.items.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'item';
+                    el.style.border = 'none';
+                    el.style.background = 'transparent';
+                    el.style.padding = '0';
+                    el.innerHTML = `
+                        <div class="item-left">
+                            <div class="checkbox checked" style="pointer-events:none; opacity:0.5;">
+                                ${checkIcon}
+                            </div>
+                            <div class="item-info">
+                                <h4>${item.isWeightBased ? item.qty + 'kg ' : (item.qty > 1 ? item.qty + 'x ' : '')}${item.name}</h4>
+                                <p>Actual: ${formatMoney(item.actualPrice)}</p>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <span class="item-price">${formatMoney(item.actualPrice * item.qty)}</span>
+                            <button class="icon-btn text-secondary" style="padding: 4px;" onclick="event.stopPropagation(); app.openEditItemModal('${item.id}')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </button>
+                            <button class="icon-btn text-danger" style="padding: 4px;" onclick="event.stopPropagation(); app.deleteItem('${item.id}')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    `;
+                    itemsContainer.appendChild(el);
+                });
+            });
+        } else {
+            filteredItems.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'item';
+                el.innerHTML = `
+                    <div class="item-left">
+                        <div class="checkbox ${item.status === 'cart' ? 'checked' : ''}" onclick="app.toggleItemStatus('${item.id}')">
+                            ${checkIcon}
+                        </div>
+                        <div class="item-info">
+                            <h4>${item.isWeightBased ? item.qty + 'kg ' : (item.qty > 1 ? item.qty + 'x ' : '')}${item.name}</h4>
+                            <p>Est: ${formatMoney(item.estPrice)}</p>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <span class="item-price">${formatMoney(item.estPrice * item.qty)}</span>
+                        <button class="icon-btn text-secondary" style="padding: 4px;" onclick="app.openEditItemModal('${item.id}')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button class="icon-btn text-danger" style="padding: 4px;" onclick="app.deleteItem('${item.id}')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+    },
+
+    toggleWeightMode: (type, isWeight) => {
+        const prefix = type === 'add' ? 'item' : 'edit-item';
+        const qtyLabel = document.getElementById(`${prefix}-qty-label`);
+        const priceLabel = type === 'add' ? document.getElementById('item-est-price-label') : document.getElementById('edit-item-price-label');
+        
+        if (isWeight) {
+            if (qtyLabel) qtyLabel.innerText = 'Weight (kg)';
+            if (priceLabel) priceLabel.innerText = priceLabel.innerText.includes('Actual') ? 'Actual Price per kg ($)' : 'Estimated Price per kg ($)';
+        } else {
+            if (qtyLabel) qtyLabel.innerText = 'Quantity';
+            if (priceLabel) priceLabel.innerText = priceLabel.innerText.includes('Actual') ? 'Actual Price ($)' : 'Estimated Price ($)';
+        }
+    },
+
+    openAddItemModal: () => {
+        const isBought = currentTab === 'bought';
+        document.getElementById('add-item-title').innerText = isBought ? 'Add Bought Item' : 'Add Item to Buy';
+        
+        const estGroup = document.getElementById('est-price-group');
+        const actGroup = document.getElementById('act-price-group');
+        const estInput = document.getElementById('item-est-price');
+        const actInput = document.getElementById('item-new-actual-price');
+        
+        document.getElementById('item-is-weight').checked = false;
+        if (app.toggleWeightMode) app.toggleWeightMode('add', false);
+        
+        if (isBought) {
+            estGroup.style.display = 'none';
+            actGroup.style.display = 'block';
+            estInput.required = false;
+            actInput.required = true;
+            document.getElementById('item-new-card').value = '';
+        } else {
+            estGroup.style.display = 'block';
+            actGroup.style.display = 'none';
+            estInput.required = true;
+            actInput.required = false;
+        }
+
+        ui.showModal('add-item-modal');
+    },
+
+    handleAddItem: (e) => {
+        e.preventDefault();
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+
+        const name = document.getElementById('item-name').value;
+        const qty = parseFloat(document.getElementById('item-qty').value) || 1;
+        const isWeightBased = document.getElementById('item-is-weight').checked;
+        const isBought = currentTab === 'bought';
+        
+        let estPrice = 0;
+        let actualPrice = 0;
+
+        if (isBought) {
+            actualPrice = parseFloat(document.getElementById('item-new-actual-price').value);
+            estPrice = actualPrice; // Fallback so estimated calculations still work
+            
+            // Deduct from card if selected
+            const cardId = document.getElementById('item-new-card').value;
+            if (cardId) {
+                const card = wallets.find(w => w.id === cardId);
+                if (card) {
+                    card.balance -= actualPrice * qty;
+                    app.renderWallet();
+                }
+            }
+        } else {
+            estPrice = parseFloat(document.getElementById('item-est-price').value);
+        }
+
+        shop.items.push({
+            id: generateId(),
+            name,
+            qty,
+            estPrice,
+            status: isBought ? 'bought' : 'to-buy',
+            actualPrice: actualPrice,
+            isWeightBased
+        });
+
+        saveToLocal();
+        e.target.reset();
+        ui.hideModal('add-item-modal');
+        app.renderItems();
+        app.updateProgress();
+    },
+
+    openEditItemModal: (itemId) => {
+        const shop = shops.find(s => s.id === currentShopId);
+        const item = shop.items.find(i => i.id === itemId);
+        if (!item) return;
+
+        document.getElementById('edit-item-id').value = item.id;
+        document.getElementById('edit-item-name').value = item.name;
+        document.getElementById('edit-item-qty').value = item.qty || 1;
+        
+        const isWeight = item.isWeightBased || false;
+        document.getElementById('edit-item-is-weight').checked = isWeight;
+        
+        const priceInput = document.getElementById('edit-item-price');
+        const priceLabel = document.getElementById('edit-item-price-label');
+        if (item.status === 'bought') {
+            priceLabel.innerText = isWeight ? 'Actual Price per kg ($)' : 'Actual Price ($)';
+            priceInput.value = item.actualPrice || item.estPrice;
+        } else {
+            priceLabel.innerText = isWeight ? 'Estimated Price per kg ($)' : 'Estimated Price ($)';
+            priceInput.value = item.estPrice;
+        }
+        
+        const qtyLabel = document.getElementById('edit-item-qty-label');
+        if (qtyLabel) qtyLabel.innerText = isWeight ? 'Weight (kg)' : 'Quantity';
+        
+        ui.showModal('edit-item-modal');
+    },
+
+    handleEditItem: (e) => {
+        e.preventDefault();
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+
+        const itemId = document.getElementById('edit-item-id').value;
+        const item = shop.items.find(i => i.id === itemId);
+        if (!item) return;
+
+        item.name = document.getElementById('edit-item-name').value;
+        item.qty = parseFloat(document.getElementById('edit-item-qty').value) || 1;
+        item.isWeightBased = document.getElementById('edit-item-is-weight').checked;
+        const price = parseFloat(document.getElementById('edit-item-price').value);
+
+        if (item.status === 'bought') {
+            item.actualPrice = price;
+        } else {
+            item.estPrice = price;
+        }
+
+        saveToLocal();
+        ui.hideModal('edit-item-modal');
+        app.renderItems();
+        app.updateProgress();
+    },
+
+    toggleItemStatus: (itemId) => {
+        const shop = shops.find(s => s.id === currentShopId);
+        const item = shop.items.find(i => i.id === itemId);
+        
+        if (item.status === 'bought') return; // Cannot toggle bought items this way anymore
+        
+        if (item.status === 'to-buy') {
+            item.status = 'cart';
+        } else if (item.status === 'cart') {
+            item.status = 'to-buy';
+        }
+        
+        saveToLocal();
+        app.renderItems();
+        app.updateProgress();
+    },
+
+    openCheckoutModal: () => {
+        const shop = shops.find(s => s.id === currentShopId);
+        const cartItems = shop.items.filter(i => i.status === 'cart');
+        if (cartItems.length === 0) {
+            alert("Cart is empty");
+            return;
+        }
+        const cartTotal = cartItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+        document.getElementById('checkout-cart-total').innerText = formatMoney(cartTotal);
+        
+        const container = document.getElementById('split-payments-container');
+        if (container) {
+            container.innerHTML = '';
+            app.addSplitPaymentRow(cartTotal);
+        }
+
+        ui.showModal('checkout-cart-modal');
+    },
+
+    addSplitPaymentRow: (amount = 0) => {
+        const container = document.getElementById('split-payments-container');
+        const row = document.createElement('div');
+        row.className = 'split-payment-row';
+        row.style.display = 'flex';
+        row.style.gap = '10px';
+        row.style.marginBottom = '10px';
+        row.style.alignItems = 'center';
+        
+        let selectHtml = '<select class="card-select split-card-select" style="flex: 2; margin: 0;"><option value="">None / Cash</option>';
+        wallets.forEach(w => {
+            selectHtml += `<option value="${w.id}">${w.name} (${formatMoney(w.balance)})</option>`;
+        });
+        selectHtml += '</select>';
+        
+        row.innerHTML = `
+            ${selectHtml}
+            <input type="number" step="0.01" class="split-amount-input" oninput="app.handleSplitAmountInput(event)" required style="flex: 1; margin: 0; padding: 12px; min-width: 80px;" placeholder="Amount" value="${amount > 0 ? amount.toFixed(2) : ''}">
+            <button type="button" onclick="app.toggleLockSplitRow(this)" class="icon-btn text-secondary split-lock-btn" style="padding: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+            </button>
+            <button type="button" onclick="app.removeSplitPaymentRow(this)" class="icon-btn text-danger" style="padding: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        `;
+        container.appendChild(row);
+        if (amount === 0) app.handleSplitAmountInput({ target: null });
+    },
+
+    toggleLockSplitRow: (btn) => {
+        const row = btn.closest('.split-payment-row');
+        const input = row.querySelector('.split-amount-input');
+        const isLocked = input.readOnly;
+        
+        if (isLocked) {
+            input.readOnly = false;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`;
+            btn.classList.remove('text-accent');
+            btn.classList.add('text-secondary');
+        } else {
+            input.readOnly = true;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+            btn.classList.remove('text-secondary');
+            btn.classList.add('text-accent');
+        }
+    },
+
+    removeSplitPaymentRow: (btn) => {
+        const container = document.getElementById('split-payments-container');
+        if (container.children.length > 1) {
+            btn.parentElement.remove();
+            app.handleSplitAmountInput({ target: null });
+        } else {
+            alert("You must have at least one payment split.");
+        }
+    },
+
+    handleSplitAmountInput: (e) => {
+        const changedInput = e ? e.target : null;
+        const allInputs = Array.from(document.querySelectorAll('.split-amount-input'));
+        if (allInputs.length <= 1) return;
+        
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+        const cartItems = shop.items.filter(i => i.status === 'cart');
+        const cartTotal = cartItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+        
+        let unlockedInputs = allInputs.filter(inp => !inp.readOnly && inp !== changedInput);
+        if (unlockedInputs.length === 0) return; 
+        
+        const targetSlot = unlockedInputs[unlockedInputs.length - 1];
+        
+        let sumOthers = 0;
+        allInputs.forEach(inp => {
+            if (inp !== targetSlot) {
+                sumOthers += parseFloat(inp.value) || 0;
+            }
+        });
+        
+        const remaining = Math.max(0, cartTotal - sumOthers);
+        targetSlot.value = remaining.toFixed(2);
+    },
+
+    handleCheckoutCart: (e) => {
+        e.preventDefault();
+        const shop = shops.find(s => s.id === currentShopId);
+        const cartItems = shop.items.filter(i => i.status === 'cart');
+        const cartTotal = cartItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+        
+        const rows = document.querySelectorAll('.split-payment-row');
+        let totalEntered = 0;
+        const deductions = [];
+        const paymentMethods = [];
+        
+        rows.forEach(row => {
+            const cardId = row.querySelector('.split-card-select').value;
+            const amount = parseFloat(row.querySelector('.split-amount-input').value) || 0;
+            totalEntered += amount;
+            if (amount > 0) {
+                const cardName = cardId ? (wallets.find(w => w.id === cardId)?.name || 'Unknown') : 'Cash';
+                paymentMethods.push(`${cardName}: ${formatMoney(amount)}`);
+                if (cardId) {
+                    deductions.push({ cardId, amount });
+                }
+            }
+        });
+
+        if (Math.abs(totalEntered - cartTotal) > 0.001) {
+            alert(`Split amounts (${formatMoney(totalEntered)}) must equal the cart total (${formatMoney(cartTotal)}).`);
+            return;
+        }
+
+        for (const d of deductions) {
+            const card = wallets.find(w => w.id === d.cardId);
+            if (card) {
+                if (card.balance < d.amount) {
+                    if (!confirm(`Card "${card.name}" balance (${formatMoney(card.balance)}) is less than deduction (${formatMoney(d.amount)}). Continue?`)) return;
+                }
+                card.balance -= d.amount;
+            }
+        }
+        app.renderWallet();
+        const receiptId = generateId();
+        const boughtAt = new Date().toISOString();
+
+        cartItems.forEach(i => {
+            i.status = 'bought';
+            i.actualPrice = i.estPrice; // default actual to est for simplicity in batch checkout
+            i.receiptId = receiptId;
+            i.boughtAt = boughtAt;
+            i.paymentMethods = paymentMethods;
+        });
+        
+        saveToLocal();
+        ui.hideModal('checkout-cart-modal');
+        currentTab = 'bought';
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const boughtTab = document.getElementById('tab-bought');
+        if(boughtTab) boughtTab.classList.add('active');
+        app.renderItems();
+        app.updateProgress();
+    },
+
+    toggleReceipt: (receiptId) => {
+        const rEl = document.getElementById(`receipt-${receiptId}`);
+        if (rEl) {
+            rEl.classList.toggle('expanded');
+        }
+    },
+
+    handleMarkBought: (e) => {
+        e.preventDefault();
+        const itemId = document.getElementById('buy-item-id').value;
+        const actualPrice = parseFloat(document.getElementById('item-actual-price').value);
+        
+        const shop = shops.find(s => s.id === currentShopId);
+        const item = shop.items.find(i => i.id === itemId);
+        
+        item.bought = true;
+        item.actualPrice = actualPrice;
+        
+        // Deduct from card if selected
+        const cardId = document.getElementById('item-actual-card').value;
+        if (cardId) {
+            const card = wallets.find(w => w.id === cardId);
+            if (card) {
+                card.balance -= actualPrice;
+                app.renderWallet();
+            }
+        }
+        
+        saveToLocal();
+        ui.hideModal('actual-price-modal');
+        app.renderItems();
+        app.updateProgress();
+    },
+
+    deleteItem: (itemId) => {
+        if(confirm('Delete this item?')) {
+            const shop = shops.find(s => s.id === currentShopId);
+            shop.items = shop.items.filter(i => i.id !== itemId);
+            saveToLocal();
+            app.renderItems();
+            app.updateProgress();
+        }
+    },
+
+    // --- Wallet ---
+    renderWallet: () => {
+        const list = document.getElementById('cards-list');
+        if(!list) return;
+        list.innerHTML = '';
+        
+        const total = wallets.reduce((acc, w) => acc + w.balance, 0);
+        document.getElementById('wallet-total').innerText = formatMoney(total);
+
+        if (wallets.length === 0) {
+            list.innerHTML = `<div class="empty-state"><p>No cards yet. Add one!</p></div>`;
+            app.updateCardSelects();
+            return;
+        }
+
+        wallets.forEach(card => {
+            const el = document.createElement('div');
+            el.className = 'wallet-card';
+            el.innerHTML = `
+                <div class="wallet-card-info">
+                    <h3>${card.name}</h3>
+                    <div class="wallet-card-balance">${formatMoney(card.balance)}</div>
+                </div>
+                <div class="wallet-card-actions">
+                    <button class="icon-btn" onclick="app.openAdjustBalance('${card.id}')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </button>
+                    <button class="icon-btn text-danger" onclick="app.deleteCard('${card.id}')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    </button>
+                </div>
+            `;
+            list.appendChild(el);
+        });
+
+        app.updateCardSelects();
+    },
+
+    updateCardSelects: () => {
+        const selects = ['item-new-card', 'item-actual-card'];
+        selects.forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const val = sel.value;
+            sel.innerHTML = '<option value="">None / Cash</option>';
+            wallets.forEach(w => {
+                sel.innerHTML += `<option value="${w.id}">${w.name} (${formatMoney(w.balance)})</option>`;
+            });
+            if (val) sel.value = val;
+        });
+    },
+
+    handleAddCard: (e) => {
+        e.preventDefault();
+        const name = document.getElementById('card-name').value;
+        const balance = parseFloat(document.getElementById('card-balance').value);
+        
+        wallets.push({
+            id: generateId(),
+            name,
+            balance
+        });
+        
+        saveToLocal();
+        e.target.reset();
+        ui.hideModal('add-card-modal');
+        app.renderWallet();
+    },
+
+    deleteCard: (id) => {
+        if(confirm('Delete this card?')) {
+            wallets = wallets.filter(w => w.id !== id);
+            saveToLocal();
+            app.renderWallet();
+        }
+    },
+
+    openAdjustBalance: (id) => {
+        const card = wallets.find(w => w.id === id);
+        if(!card) return;
+        document.getElementById('adjust-card-id').value = id;
+        document.getElementById('card-new-balance').value = card.balance.toFixed(2);
+        ui.showModal('adjust-balance-modal');
+    },
+
+    handleAdjustBalance: (e) => {
+        e.preventDefault();
+        const id = document.getElementById('adjust-card-id').value;
+        const newBalance = parseFloat(document.getElementById('card-new-balance').value);
+        
+        const card = wallets.find(w => w.id === id);
+        if(card) {
+            card.balance = newBalance;
+            saveToLocal();
+            ui.hideModal('adjust-balance-modal');
+            app.renderWallet();
+        }
+    }
+};
+
+// Start
+app.init();
+
+    </script>
+</body>
+</html>

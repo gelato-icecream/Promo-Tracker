@@ -8,6 +8,7 @@
     <meta name="theme-color" content="#0f172a">
     <title>PromoTracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
 :root {
     --bg-dark: #0f172a;
@@ -803,7 +804,12 @@ main {
                 <form id="add-item-form" onsubmit="app.handleAddItem(event)">
                     <div class="input-group">
                         <label>Item Name</label>
-                        <input type="text" id="item-name" required placeholder="e.g. Shampoo" list="item-history" oninput="app.handleItemNameInput(event, 'item-est-price', 'item-new-actual-price')">
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="item-name" required placeholder="e.g. Shampoo" list="item-history" oninput="app.handleItemNameInput(event, 'item-est-price', 'item-new-actual-price')" style="flex: 1; min-width: 0;">
+                            <button type="button" class="btn-primary" style="padding: 0 15px; display: flex; align-items: center; justify-content: center;" onclick="app.startScanner()" title="Scan Barcode">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><path d="M7 12h10"/></svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="input-group" style="flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 10px;">
                         <input type="checkbox" id="item-is-weight" onchange="app.toggleWeightMode('add', this.checked)" style="width: auto;">
@@ -934,6 +940,24 @@ main {
                         <button type="submit" class="btn-primary">Confirm Checkout</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <div id="scanner-modal" class="modal-overlay">
+            <div class="modal" style="display: flex; flex-direction: column; align-items: center;">
+                <h2>Scan Barcode</h2>
+                <div id="reader" style="width: 100%; min-height: 250px; background: rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; position: relative; margin-top: 10px;"></div>
+                <p id="scanner-status" style="margin-top: 15px; font-size: 14px; text-align: center; color: var(--text-secondary);">Initializing camera...</p>
+                
+                <div style="margin-top: 20px; width: 100%;">
+                    <p style="text-align: center; margin-bottom: 10px; font-size: 14px; color: var(--text-secondary);">Or upload a photo if camera is blocked</p>
+                    <input type="file" id="scanner-file-input" accept="image/*" style="display: none;" onchange="app.handleBarcodeImageUpload(event)">
+                    <button type="button" class="btn-text" style="width: 100%; border: 1px solid var(--border); border-radius: 12px;" onclick="document.getElementById('scanner-file-input').click()">Choose Image</button>
+                </div>
+
+                <div class="modal-actions" style="width: 100%; justify-content: center; margin-top: 20px;">
+                    <button type="button" class="btn-text" style="width: 100%;" onclick="app.closeScanner()">Cancel</button>
+                </div>
             </div>
         </div>
 
@@ -1855,6 +1879,93 @@ const app = {
             saveToLocal();
             ui.hideModal('adjust-balance-modal');
             app.renderWallet();
+        }
+    },
+
+    // --- Barcode Scanner ---
+    scannerInstance: null,
+    
+    startScanner: async () => {
+        ui.showModal('scanner-modal');
+        document.getElementById('scanner-status').innerText = "Requesting camera access...";
+        
+        if (!app.scannerInstance) {
+            app.scannerInstance = new Html5Qrcode("reader");
+        }
+
+        try {
+            await app.scannerInstance.start(
+                { facingMode: "environment" }, 
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 }
+                },
+                (decodedText, decodedResult) => {
+                    app.handleBarcodeSuccess(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignore continuous scan errors
+                }
+            );
+            document.getElementById('scanner-status').innerText = "Scanning... point camera at barcode";
+        } catch (err) {
+            document.getElementById('scanner-status').innerText = "Camera unavailable. Please upload a photo.";
+            console.warn("Camera start failed", err);
+        }
+    },
+
+    handleBarcodeImageUpload: async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        document.getElementById('scanner-status').innerText = "Scanning image...";
+        
+        if (!app.scannerInstance) {
+            app.scannerInstance = new Html5Qrcode("reader");
+        }
+        
+        try {
+            const decodedText = await app.scannerInstance.scanFile(file, true);
+            app.handleBarcodeSuccess(decodedText);
+        } catch (err) {
+            document.getElementById('scanner-status').innerText = "No barcode found in image. Try another.";
+        }
+        // Reset file input so same file can be chosen again if needed
+        e.target.value = '';
+    },
+
+    handleBarcodeSuccess: async (barcode) => {
+        app.closeScanner();
+        const nameInput = document.getElementById('item-name');
+        nameInput.value = "Looking up product...";
+        
+        try {
+            const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+            const data = await res.json();
+            if (data && data.status === 1 && data.product && data.product.product_name) {
+                const brand = data.product.brands ? data.product.brands.split(',')[0] + ' ' : '';
+                nameInput.value = brand + data.product.product_name;
+            } else {
+                nameInput.value = barcode; 
+            }
+        } catch (e) {
+            nameInput.value = barcode;
+        }
+        // Trigger input event to update prices if history has it
+        nameInput.dispatchEvent(new Event('input'));
+    },
+
+    closeScanner: () => {
+        if (app.scannerInstance && app.scannerInstance.isScanning) {
+            app.scannerInstance.stop().then(() => {
+                ui.hideModal('scanner-modal');
+                app.scannerInstance.clear();
+            }).catch((err) => {
+                ui.hideModal('scanner-modal');
+            });
+        } else {
+            if (app.scannerInstance) app.scannerInstance.clear();
+            ui.hideModal('scanner-modal');
         }
     }
 };

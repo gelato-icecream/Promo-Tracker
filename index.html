@@ -1939,18 +1939,34 @@ const app = {
         const nameInput = document.getElementById('item-name');
         nameInput.value = "Looking up product...";
         
+        let foundName = null;
+
+        // Try Open Food Facts API (Good for groceries)
         try {
             const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
             const data = await res.json();
             if (data && data.status === 1 && data.product && data.product.product_name) {
                 const brand = data.product.brands ? data.product.brands.split(',')[0] + ' ' : '';
-                nameInput.value = brand + data.product.product_name;
-            } else {
-                nameInput.value = barcode; 
+                foundName = (brand + data.product.product_name).trim();
             }
         } catch (e) {
-            nameInput.value = barcode;
+            console.warn("OpenFoodFacts lookup failed", e);
         }
+
+        // If not found, try UPCitemdb API (Good for general items)
+        if (!foundName) {
+            try {
+                const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`);
+                const data = await res.json();
+                if (data && data.code === "OK" && data.items && data.items.length > 0) {
+                    foundName = data.items[0].title;
+                }
+            } catch (e) {
+                console.warn("UPCitemdb lookup failed", e);
+            }
+        }
+
+        nameInput.value = foundName || barcode;
         // Trigger input event to update prices if history has it
         nameInput.dispatchEvent(new Event('input'));
     },

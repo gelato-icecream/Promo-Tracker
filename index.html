@@ -767,8 +767,16 @@ main {
                         <input type="text" id="shop-name" required placeholder="e.g. Target, Sephora">
                     </div>
                     <div class="input-group">
-                        <label>Target Amount ($)</label>
-                        <input type="number" id="shop-target" step="0.01" required placeholder="100.00">
+                        <label>Target Amount ($) - Optional</label>
+                        <input type="number" id="shop-target" step="0.01" placeholder="Leave blank for no target">
+                    </div>
+                    <div class="input-group">
+                        <label>Website URL (Optional)</label>
+                        <input type="url" id="shop-website" placeholder="https://...">
+                    </div>
+                    <div class="input-group">
+                        <label>App Deep Link (Optional)</label>
+                        <input type="text" id="shop-app" placeholder="e.g. target://">
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-text" onclick="ui.hideModal('add-shop-modal')">Cancel</button>
@@ -787,8 +795,16 @@ main {
                         <input type="text" id="edit-shop-name" required>
                     </div>
                     <div class="input-group">
-                        <label>Target Amount ($)</label>
-                        <input type="number" id="edit-shop-target" step="0.01" required>
+                        <label>Target Amount ($) - Optional</label>
+                        <input type="number" id="edit-shop-target" step="0.01" placeholder="Leave blank for no target">
+                    </div>
+                    <div class="input-group">
+                        <label>Website URL (Optional)</label>
+                        <input type="url" id="edit-shop-website" placeholder="https://...">
+                    </div>
+                    <div class="input-group">
+                        <label>App Deep Link (Optional)</label>
+                        <input type="text" id="edit-shop-app" placeholder="e.g. target://">
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-text" onclick="ui.hideModal('edit-shop-modal')">Cancel</button>
@@ -821,7 +837,7 @@ main {
                     </div>
                     <div class="input-group" id="est-price-group">
                         <label id="item-est-price-label">Estimated Price ($)</label>
-                        <input type="number" id="item-est-price" step="0.01" required placeholder="15.00">
+                        <input type="number" id="item-est-price" step="0.01" placeholder="15.00">
                     </div>
                     <div class="input-group" id="act-price-group" style="display: none;">
                         <label>Actual Price ($)</label>
@@ -858,7 +874,7 @@ main {
                     </div>
                     <div class="input-group" id="edit-item-price-group">
                         <label id="edit-item-price-label">Price ($)</label>
-                        <input type="number" id="edit-item-price" step="0.01" required>
+                        <input type="number" id="edit-item-price" step="0.01">
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-text" onclick="ui.hideModal('edit-item-modal')">Cancel</button>
@@ -889,6 +905,24 @@ main {
                 </form>
             </div>
         </div>
+
+        <div id="cart-price-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Move to Cart</h2>
+                <form id="cart-price-form" onsubmit="app.handleMoveToCart(event)">
+                    <input type="hidden" id="cart-item-id">
+                    <div class="input-group">
+                        <label>Item Cost ($)</label>
+                        <input type="number" id="cart-item-price" step="0.01" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('cart-price-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Move to Cart</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div id="add-card-modal" class="modal-overlay">
             <div class="modal">
                 <h2>Add Card</h2>
@@ -901,6 +935,14 @@ main {
                         <label>Current Balance ($)</label>
                         <input type="number" id="card-balance" step="0.01" required placeholder="50.00">
                     </div>
+                    <div class="input-group">
+                        <label>Website URL (Optional)</label>
+                        <input type="url" id="card-website" placeholder="https://...">
+                    </div>
+                    <div class="input-group">
+                        <label>App Deep Link (Optional)</label>
+                        <input type="text" id="card-app" placeholder="e.g. starbucks://">
+                    </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-text" onclick="ui.hideModal('add-card-modal')">Cancel</button>
                         <button type="submit" class="btn-primary">Add</button>
@@ -909,18 +951,30 @@ main {
             </div>
         </div>
 
-        <div id="adjust-balance-modal" class="modal-overlay">
+        <div id="edit-card-modal" class="modal-overlay">
             <div class="modal">
-                <h2>Adjust Balance</h2>
-                <form id="adjust-balance-form" onsubmit="app.handleAdjustBalance(event)">
-                    <input type="hidden" id="adjust-card-id">
+                <h2>Edit Card</h2>
+                <form id="edit-card-form" onsubmit="app.handleEditCard(event)">
+                    <input type="hidden" id="edit-card-id">
                     <div class="input-group">
-                        <label>New Balance ($)</label>
-                        <input type="number" id="card-new-balance" step="0.01" required>
+                        <label>Card Name</label>
+                        <input type="text" id="edit-card-name" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Current Balance ($)</label>
+                        <input type="number" id="edit-card-balance" step="0.01" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Website URL (Optional)</label>
+                        <input type="url" id="edit-card-website" placeholder="https://...">
+                    </div>
+                    <div class="input-group">
+                        <label>App Deep Link (Optional)</label>
+                        <input type="text" id="edit-card-app" placeholder="e.g. starbucks://">
                     </div>
                     <div class="modal-actions">
-                        <button type="button" class="btn-text" onclick="ui.hideModal('adjust-balance-modal')">Cancel</button>
-                        <button type="submit" class="btn-primary">Update</button>
+                        <button type="button" class="btn-text" onclick="ui.hideModal('edit-card-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Save</button>
                     </div>
                 </form>
             </div>
@@ -1153,7 +1207,7 @@ const app = {
                     <p>${shop.items.length} items &bull; ${formatMoney(spent)} in cart</p>
                 </div>
                 <div class="card-target">
-                    ${formatMoney(shop.target)}
+                    ${shop.target ? formatMoney(shop.target) : '<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">No Target</span>'}
                 </div>
             `;
             list.appendChild(card);
@@ -1163,12 +1217,17 @@ const app = {
     handleAddShop: (e) => {
         e.preventDefault();
         const name = document.getElementById('shop-name').value;
-        const target = parseFloat(document.getElementById('shop-target').value);
+        const targetVal = parseFloat(document.getElementById('shop-target').value);
+        const target = isNaN(targetVal) || targetVal <= 0 ? null : targetVal;
+        const websiteUrl = document.getElementById('shop-website').value.trim();
+        const appUrl = document.getElementById('shop-app').value.trim();
         
         shops.push({
             id: generateId(),
             name,
             target,
+            websiteUrl,
+            appUrl,
             items: []
         });
         
@@ -1182,7 +1241,9 @@ const app = {
         const shop = shops.find(s => s.id === currentShopId);
         if (!shop) return;
         document.getElementById('edit-shop-name').value = shop.name;
-        document.getElementById('edit-shop-target').value = shop.target;
+        document.getElementById('edit-shop-target').value = shop.target ? shop.target : '';
+        document.getElementById('edit-shop-website').value = shop.websiteUrl || '';
+        document.getElementById('edit-shop-app').value = shop.appUrl || '';
         ui.showModal('edit-shop-modal');
     },
 
@@ -1192,7 +1253,10 @@ const app = {
         if (!shop) return;
 
         shop.name = document.getElementById('edit-shop-name').value;
-        shop.target = parseFloat(document.getElementById('edit-shop-target').value);
+        const targetVal = parseFloat(document.getElementById('edit-shop-target').value);
+        shop.target = isNaN(targetVal) || targetVal <= 0 ? null : targetVal;
+        shop.websiteUrl = document.getElementById('edit-shop-website').value.trim();
+        shop.appUrl = document.getElementById('edit-shop-app').value.trim();
         
         saveToLocal();
         ui.hideModal('edit-shop-modal');
@@ -1236,7 +1300,26 @@ const app = {
         const shop = shops.find(s => s.id === currentShopId);
         if (!shop) return;
         document.getElementById('current-shop-name').innerText = shop.name;
-        document.getElementById('current-shop-target').innerText = `Target: ${formatMoney(shop.target)}`;
+        document.getElementById('current-shop-target').innerText = shop.target ? `Target: ${formatMoney(shop.target)}` : 'Pure Shopping List';
+        
+        let linksContainer = document.getElementById('current-shop-links');
+        if (!linksContainer) {
+            const targetEl = document.getElementById('current-shop-target');
+            linksContainer = document.createElement('div');
+            linksContainer.id = 'current-shop-links';
+            linksContainer.style.display = 'flex';
+            linksContainer.style.gap = '10px';
+            linksContainer.style.marginTop = '5px';
+            targetEl.parentNode.insertBefore(linksContainer, targetEl.nextSibling);
+        }
+        
+        linksContainer.innerHTML = '';
+        if (shop.websiteUrl) {
+            linksContainer.innerHTML += `<a href="${shop.websiteUrl}" target="_blank" class="icon-btn" style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 8px; color: var(--accent); text-decoration: none; font-size: 12px; display: inline-flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>Website</a>`;
+        }
+        if (shop.appUrl) {
+            linksContainer.innerHTML += `<a href="${shop.appUrl}" target="_blank" class="icon-btn" style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 8px; color: var(--accent); text-decoration: none; font-size: 12px; display: inline-flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>App</a>`;
+        }
     },
 
     updateProgress: () => {
@@ -1245,19 +1328,29 @@ const app = {
 
         const estTotal = shop.items.filter(i => i.status !== 'bought').reduce((acc, i) => acc + (i.estPrice * (i.qty || 1)), 0);
         const spent = shop.items.filter(i => i.status === 'cart').reduce((acc, i) => acc + (i.estPrice * (i.qty || 1)), 0);
-        const remaining = shop.target - spent;
+        const remaining = shop.target ? shop.target - spent : null;
 
         document.getElementById('spent-amount').innerText = formatMoney(spent);
         document.getElementById('est-total').innerText = formatMoney(estTotal);
         
         const remEl = document.getElementById('remaining-amount');
-        remEl.innerText = remaining < 0 ? `+${formatMoney(Math.abs(remaining))}` : formatMoney(remaining);
-        remEl.style.color = remaining < 0 ? 'var(--danger)' : 'var(--accent)';
+        if (remaining !== null) {
+            remEl.innerText = remaining < 0 ? `+${formatMoney(Math.abs(remaining))}` : formatMoney(remaining);
+            remEl.style.color = remaining < 0 ? 'var(--danger)' : 'var(--accent)';
+        } else {
+            remEl.innerText = '-';
+            remEl.style.color = 'var(--text-secondary)';
+        }
 
         // Update Ring
         const ring = document.querySelector('.progress-ring-fill');
         const circumference = 314; // 2 * pi * 50
-        const percent = Math.min((spent / shop.target) * 100, 100);
+        let percent = 0;
+        if (shop.target) {
+            percent = Math.min((spent / shop.target) * 100, 100);
+        } else {
+            percent = 100; // Just show full ring for shopping lists
+        }
         const offset = circumference - (percent / 100) * circumference;
         ring.style.strokeDashoffset = offset;
     },
@@ -1433,7 +1526,12 @@ const app = {
 
     openAddItemModal: () => {
         const isBought = currentTab === 'bought';
-        document.getElementById('add-item-title').innerText = isBought ? 'Add Bought Item' : 'Add Item to Buy';
+        const isCart = currentTab === 'cart';
+        
+        let title = 'Add Item to Buy';
+        if (isCart) title = 'Add Item to Cart';
+        if (isBought) title = 'Add Bought Item';
+        document.getElementById('add-item-title').innerText = title;
         
         const estGroup = document.getElementById('est-price-group');
         const actGroup = document.getElementById('act-price-group');
@@ -1452,7 +1550,7 @@ const app = {
         } else {
             estGroup.style.display = 'block';
             actGroup.style.display = 'none';
-            estInput.required = true;
+            estInput.required = isCart;
             actInput.required = false;
         }
 
@@ -1486,15 +1584,19 @@ const app = {
                 }
             }
         } else {
-            estPrice = parseFloat(document.getElementById('item-est-price').value);
+            estPrice = parseFloat(document.getElementById('item-est-price').value) || 0;
         }
+
+        let status = 'to-buy';
+        if (currentTab === 'cart') status = 'cart';
+        if (currentTab === 'bought') status = 'bought';
 
         shop.items.push({
             id: generateId(),
             name,
             qty,
             estPrice,
-            status: isBought ? 'bought' : 'to-buy',
+            status: status,
             actualPrice: actualPrice,
             isWeightBased
         });
@@ -1522,10 +1624,12 @@ const app = {
         const priceLabel = document.getElementById('edit-item-price-label');
         if (item.status === 'bought') {
             priceLabel.innerText = isWeight ? 'Actual Price per kg ($)' : 'Actual Price ($)';
-            priceInput.value = item.actualPrice || item.estPrice;
+            priceInput.value = item.actualPrice || item.estPrice || '';
+            priceInput.required = true;
         } else {
             priceLabel.innerText = isWeight ? 'Estimated Price per kg ($)' : 'Estimated Price ($)';
-            priceInput.value = item.estPrice;
+            priceInput.value = item.estPrice || '';
+            priceInput.required = (item.status === 'cart');
         }
         
         const qtyLabel = document.getElementById('edit-item-qty-label');
@@ -1546,7 +1650,7 @@ const app = {
         item.name = document.getElementById('edit-item-name').value;
         item.qty = parseFloat(document.getElementById('edit-item-qty').value) || 1;
         item.isWeightBased = document.getElementById('edit-item-is-weight').checked;
-        const price = parseFloat(document.getElementById('edit-item-price').value);
+        const price = parseFloat(document.getElementById('edit-item-price').value) || 0;
 
         if (item.status === 'bought') {
             item.actualPrice = price;
@@ -1567,12 +1671,30 @@ const app = {
         if (item.status === 'bought') return; // Cannot toggle bought items this way anymore
         
         if (item.status === 'to-buy') {
-            item.status = 'cart';
+            document.getElementById('cart-item-id').value = itemId;
+            document.getElementById('cart-item-price').value = item.estPrice || '';
+            ui.showModal('cart-price-modal');
         } else if (item.status === 'cart') {
             item.status = 'to-buy';
+            saveToLocal();
+            app.renderItems();
+            app.updateProgress();
         }
-        
+    },
+
+    handleMoveToCart: (e) => {
+        e.preventDefault();
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return;
+        const itemId = document.getElementById('cart-item-id').value;
+        const item = shop.items.find(i => i.id === itemId);
+        if (!item) return;
+
+        item.estPrice = parseFloat(document.getElementById('cart-item-price').value);
+        item.status = 'cart';
+
         saveToLocal();
+        ui.hideModal('cart-price-modal');
         app.renderItems();
         app.updateProgress();
     },
@@ -1807,7 +1929,9 @@ const app = {
                     <div class="wallet-card-balance">${formatMoney(card.balance)}</div>
                 </div>
                 <div class="wallet-card-actions">
-                    <button class="icon-btn" onclick="app.openAdjustBalance('${card.id}')">
+                    ${card.websiteUrl ? `<a href="${card.websiteUrl}" target="_blank" class="icon-btn" style="color: var(--accent);" title="Open Website"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>` : ''}
+                    ${card.appUrl ? `<a href="${card.appUrl}" target="_blank" class="icon-btn" style="color: var(--accent);" title="Open App"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></a>` : ''}
+                    <button class="icon-btn" onclick="app.openEditCard('${card.id}')">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                     </button>
                     <button class="icon-btn text-danger" onclick="app.deleteCard('${card.id}')">
@@ -1839,11 +1963,15 @@ const app = {
         e.preventDefault();
         const name = document.getElementById('card-name').value;
         const balance = parseFloat(document.getElementById('card-balance').value);
+        const websiteUrl = document.getElementById('card-website').value.trim();
+        const appUrl = document.getElementById('card-app').value.trim();
         
         wallets.push({
             id: generateId(),
             name,
-            balance
+            balance,
+            websiteUrl,
+            appUrl
         });
         
         saveToLocal();
@@ -1860,24 +1988,33 @@ const app = {
         }
     },
 
-    openAdjustBalance: (id) => {
+    openEditCard: (id) => {
         const card = wallets.find(w => w.id === id);
         if(!card) return;
-        document.getElementById('adjust-card-id').value = id;
-        document.getElementById('card-new-balance').value = card.balance.toFixed(2);
-        ui.showModal('adjust-balance-modal');
+        document.getElementById('edit-card-id').value = id;
+        document.getElementById('edit-card-name').value = card.name;
+        document.getElementById('edit-card-balance').value = card.balance.toFixed(2);
+        document.getElementById('edit-card-website').value = card.websiteUrl || '';
+        document.getElementById('edit-card-app').value = card.appUrl || '';
+        ui.showModal('edit-card-modal');
     },
 
-    handleAdjustBalance: (e) => {
+    handleEditCard: (e) => {
         e.preventDefault();
-        const id = document.getElementById('adjust-card-id').value;
-        const newBalance = parseFloat(document.getElementById('card-new-balance').value);
+        const id = document.getElementById('edit-card-id').value;
+        const newName = document.getElementById('edit-card-name').value;
+        const newBalance = parseFloat(document.getElementById('edit-card-balance').value);
+        const websiteUrl = document.getElementById('edit-card-website').value.trim();
+        const appUrl = document.getElementById('edit-card-app').value.trim();
         
         const card = wallets.find(w => w.id === id);
         if(card) {
+            card.name = newName;
             card.balance = newBalance;
+            card.websiteUrl = websiteUrl;
+            card.appUrl = appUrl;
             saveToLocal();
-            ui.hideModal('adjust-balance-modal');
+            ui.hideModal('edit-card-modal');
             app.renderWallet();
         }
     },

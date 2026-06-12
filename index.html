@@ -847,6 +847,18 @@ main {
                             <option value="">None / Cash</option>
                         </select>
                     </div>
+                    <div class="input-group">
+                        <label>Discount / Promo</label>
+                        <select id="item-discount-type" class="card-select" onchange="app.toggleDiscountInputs('add')">
+                            <option value="none">None</option>
+                            <option value="percent">Percentage Off (%)</option>
+                            <option value="amount">Amount Off ($)</option>
+                            <option value="bulk">Bulk (Buy X for $Y)</option>
+                            <option value="bogo">Buy X Get Y Free</option>
+                        </select>
+                        <div id="add-discount-inputs" style="display: none; gap: 10px; margin-top: 10px;">
+                        </div>
+                    </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-text" onclick="ui.hideModal('add-item-modal')">Cancel</button>
                         <button type="submit" class="btn-primary">Add</button>
@@ -875,6 +887,18 @@ main {
                     <div class="input-group" id="edit-item-price-group">
                         <label id="edit-item-price-label">Price ($)</label>
                         <input type="number" id="edit-item-price" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label>Discount / Promo</label>
+                        <select id="edit-item-discount-type" class="card-select" onchange="app.toggleDiscountInputs('edit')">
+                            <option value="none">None</option>
+                            <option value="percent">Percentage Off (%)</option>
+                            <option value="amount">Amount Off ($)</option>
+                            <option value="bulk">Bulk (Buy X for $Y)</option>
+                            <option value="bogo">Buy X Get Y Free</option>
+                        </select>
+                        <div id="edit-discount-inputs" style="display: none; gap: 10px; margin-top: 10px;">
+                        </div>
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-text" onclick="ui.hideModal('edit-item-modal')">Cancel</button>
@@ -1089,6 +1113,68 @@ const ui = {
 
 // App Logic
 const app = {
+    calculateItemTotal: (item, priceType = 'estPrice') => {
+        const price = parseFloat(item[priceType]) || 0;
+        const qty = parseFloat(item.qty) || 1;
+        
+        if (!item.discount || item.discount.type === 'none') {
+            return price * qty;
+        }
+
+        const type = item.discount.type;
+        const v1 = parseFloat(item.discount.value1) || 0;
+        const v2 = parseFloat(item.discount.value2) || 0;
+
+        if (type === 'percent') {
+            return (price * (1 - v1 / 100)) * qty;
+        } else if (type === 'amount') {
+            return Math.max(0, price - v1) * qty;
+        } else if (type === 'bulk') {
+            if (v1 <= 0) return price * qty;
+            const bundles = Math.floor(qty / v1);
+            const remainder = qty % v1;
+            return (bundles * v2) + (remainder * price);
+        } else if (type === 'bogo') {
+            if (v1 <= 0) return price * qty;
+            const bundleSize = v1 + v2;
+            const bundles = Math.floor(qty / bundleSize);
+            const remainder = qty % bundleSize;
+            const paidInRemainder = Math.min(remainder, v1);
+            return (bundles * v1 * price) + (paidInRemainder * price);
+        }
+
+        return price * qty;
+    },
+
+    toggleDiscountInputs: (mode) => {
+        const prefix = mode === 'add' ? 'item' : 'edit-item';
+        const typeSelect = document.getElementById(`${prefix}-discount-type`);
+        const inputsDiv = document.getElementById(`${mode}-discount-inputs`);
+        if (!typeSelect || !inputsDiv) return;
+
+        const type = typeSelect.value;
+        inputsDiv.style.display = type === 'none' ? 'none' : 'flex';
+        
+        if (type === 'percent') {
+            inputsDiv.innerHTML = `<input type="number" id="${prefix}-discount-v1" placeholder="% off" style="flex: 1; min-width: 0;">`;
+        } else if (type === 'amount') {
+            inputsDiv.innerHTML = `<input type="number" id="${prefix}-discount-v1" placeholder="$ off" style="flex: 1; min-width: 0;">`;
+        } else if (type === 'bulk') {
+            inputsDiv.innerHTML = `
+                <input type="number" id="${prefix}-discount-v1" placeholder="Buy Qty" style="flex: 1; min-width: 0;">
+                <span style="display:flex;align-items:center;color:var(--text-secondary)">for</span>
+                <input type="number" id="${prefix}-discount-v2" placeholder="$" style="flex: 1; min-width: 0;">
+            `;
+        } else if (type === 'bogo') {
+            inputsDiv.innerHTML = `
+                <span style="display:flex;align-items:center;color:var(--text-secondary)">Buy</span>
+                <input type="number" id="${prefix}-discount-v1" placeholder="Qty" style="flex: 1; min-width: 0;">
+                <span style="display:flex;align-items:center;color:var(--text-secondary)">Get</span>
+                <input type="number" id="${prefix}-discount-v2" placeholder="Free" style="flex: 1; min-width: 0;">
+            `;
+        }
+    },
+
     init: () => {
         const theme = localStorage.getItem('promo_theme');
         if (theme === 'light') {
@@ -1196,7 +1282,7 @@ const app = {
         }
 
         shops.forEach(shop => {
-            const spent = shop.items.filter(i => i.status === 'cart').reduce((acc, i) => acc + (i.estPrice * (i.qty || 1)), 0);
+            const spent = shop.items.filter(i => i.status === 'cart').reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
             
             const card = document.createElement('div');
             card.className = 'card';
@@ -1326,8 +1412,8 @@ const app = {
         const shop = shops.find(s => s.id === currentShopId);
         if (!shop) return;
 
-        const estTotal = shop.items.filter(i => i.status !== 'bought').reduce((acc, i) => acc + (i.estPrice * (i.qty || 1)), 0);
-        const spent = shop.items.filter(i => i.status === 'cart').reduce((acc, i) => acc + (i.estPrice * (i.qty || 1)), 0);
+        const estTotal = shop.items.filter(i => i.status !== 'bought').reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
+        const spent = shop.items.filter(i => i.status === 'cart').reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
         const remaining = shop.target ? shop.target - spent : null;
 
         document.getElementById('spent-amount').innerText = formatMoney(spent);
@@ -1376,17 +1462,17 @@ const app = {
         if (currentTab === 'to-buy') {
             filteredItems = shop.items.filter(i => i.status === 'to-buy');
             tabLabel = 'To Buy Items';
-            tabTotal = filteredItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+            tabTotal = filteredItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
             document.getElementById('checkout-btn').style.display = 'none';
         } else if (currentTab === 'cart') {
             filteredItems = shop.items.filter(i => i.status === 'cart');
             tabLabel = 'Cart Items';
-            tabTotal = filteredItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+            tabTotal = filteredItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
             document.getElementById('checkout-btn').style.display = 'block';
         } else if (currentTab === 'bought') {
             filteredItems = shop.items.filter(i => i.status === 'bought');
             tabLabel = 'Bought Items';
-            tabTotal = filteredItems.reduce((acc, i) => acc + (i.actualPrice * i.qty), 0);
+            tabTotal = filteredItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'actualPrice'), 0);
             document.getElementById('checkout-btn').style.display = 'none';
         }
 
@@ -1408,7 +1494,7 @@ const app = {
                 const rid = i.receiptId || 'legacy';
                 if (!receipts[rid]) receipts[rid] = { items: [], total: 0, date: i.boughtAt || null };
                 receipts[rid].items.push(i);
-                receipts[rid].total += (i.actualPrice * i.qty);
+                receipts[rid].total += app.calculateItemTotal(i, 'actualPrice');
             });
 
             const receiptArray = Object.keys(receipts).map(id => ({ id, ...receipts[id] })).sort((a, b) => {
@@ -1458,6 +1544,16 @@ const app = {
                     el.style.border = 'none';
                     el.style.background = 'transparent';
                     el.style.padding = '0';
+                let discountBadge = '';
+                if (item.discount && item.discount.type !== 'none') {
+                    let dText = '';
+                    if (item.discount.type === 'percent') dText = `${item.discount.value1}% Off`;
+                    else if (item.discount.type === 'amount') dText = `$${item.discount.value1} Off`;
+                    else if (item.discount.type === 'bulk') dText = `${item.discount.value1} for $${item.discount.value2}`;
+                    else if (item.discount.type === 'bogo') dText = `Buy ${item.discount.value1} Get ${item.discount.value2} Free`;
+                    discountBadge = `<span style="font-size:10px; background:var(--accent-glow); color:var(--accent); padding:2px 6px; border-radius:4px; margin-top:4px; display:inline-block;">${dText}</span>`;
+                }
+
                     el.innerHTML = `
                         <div class="item-left">
                             <div class="checkbox checked" style="pointer-events:none; opacity:0.5;">
@@ -1466,10 +1562,11 @@ const app = {
                             <div class="item-info">
                                 <h4>${item.isWeightBased ? item.qty + 'kg ' : (item.qty > 1 ? item.qty + 'x ' : '')}${item.name}</h4>
                                 <p>Actual: ${formatMoney(item.actualPrice)}</p>
+                                ${discountBadge}
                             </div>
                         </div>
                         <div class="item-actions">
-                            <span class="item-price">${formatMoney(item.actualPrice * item.qty)}</span>
+                            <span class="item-price">${formatMoney(app.calculateItemTotal(item, 'actualPrice'))}</span>
                             <button class="icon-btn text-secondary" style="padding: 4px;" onclick="event.stopPropagation(); app.openEditItemModal('${item.id}')">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             </button>
@@ -1485,6 +1582,16 @@ const app = {
             filteredItems.forEach(item => {
                 const el = document.createElement('div');
                 el.className = 'item';
+                let discountBadge = '';
+                if (item.discount && item.discount.type !== 'none') {
+                    let dText = '';
+                    if (item.discount.type === 'percent') dText = `${item.discount.value1}% Off`;
+                    else if (item.discount.type === 'amount') dText = `$${item.discount.value1} Off`;
+                    else if (item.discount.type === 'bulk') dText = `${item.discount.value1} for $${item.discount.value2}`;
+                    else if (item.discount.type === 'bogo') dText = `Buy ${item.discount.value1} Get ${item.discount.value2} Free`;
+                    discountBadge = `<span style="font-size:10px; background:var(--accent-glow); color:var(--accent); padding:2px 6px; border-radius:4px; margin-top:4px; display:inline-block;">${dText}</span>`;
+                }
+
                 el.innerHTML = `
                     <div class="item-left">
                         <div class="checkbox ${item.status === 'cart' ? 'checked' : ''}" onclick="app.toggleItemStatus('${item.id}')">
@@ -1493,10 +1600,11 @@ const app = {
                         <div class="item-info">
                             <h4>${item.isWeightBased ? item.qty + 'kg ' : (item.qty > 1 ? item.qty + 'x ' : '')}${item.name}</h4>
                             <p>Est: ${formatMoney(item.estPrice)}</p>
+                            ${discountBadge}
                         </div>
                     </div>
                     <div class="item-actions">
-                        <span class="item-price">${formatMoney(item.estPrice * item.qty)}</span>
+                        <span class="item-price">${formatMoney(app.calculateItemTotal(item, 'estPrice'))}</span>
                         <button class="icon-btn text-secondary" style="padding: 4px;" onclick="app.openEditItemModal('${item.id}')">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
@@ -1540,6 +1648,8 @@ const app = {
         
         document.getElementById('item-is-weight').checked = false;
         if (app.toggleWeightMode) app.toggleWeightMode('add', false);
+        document.getElementById('item-discount-type').value = 'none';
+        app.toggleDiscountInputs('add');
         
         if (isBought) {
             estGroup.style.display = 'none';
@@ -1573,16 +1683,6 @@ const app = {
         if (isBought) {
             actualPrice = parseFloat(document.getElementById('item-new-actual-price').value);
             estPrice = actualPrice; // Fallback so estimated calculations still work
-            
-            // Deduct from card if selected
-            const cardId = document.getElementById('item-new-card').value;
-            if (cardId) {
-                const card = wallets.find(w => w.id === cardId);
-                if (card) {
-                    card.balance -= actualPrice * qty;
-                    app.renderWallet();
-                }
-            }
         } else {
             estPrice = parseFloat(document.getElementById('item-est-price').value) || 0;
         }
@@ -1590,16 +1690,35 @@ const app = {
         let status = 'to-buy';
         if (currentTab === 'cart') status = 'cart';
         if (currentTab === 'bought') status = 'bought';
+        
+        const discountType = document.getElementById('item-discount-type').value;
+        const discountV1 = document.getElementById('item-discount-v1') ? document.getElementById('item-discount-v1').value : null;
+        const discountV2 = document.getElementById('item-discount-v2') ? document.getElementById('item-discount-v2').value : null;
+        const discount = { type: discountType, value1: discountV1, value2: discountV2 };
 
-        shop.items.push({
+        let newItem = {
             id: generateId(),
             name,
             qty,
             estPrice,
             status: status,
             actualPrice: actualPrice,
-            isWeightBased
-        });
+            isWeightBased,
+            discount
+        };
+
+        if (isBought) {
+            const cardId = document.getElementById('item-new-card').value;
+            if (cardId) {
+                const card = wallets.find(w => w.id === cardId);
+                if (card) {
+                    card.balance -= app.calculateItemTotal(newItem, 'actualPrice');
+                    app.renderWallet();
+                }
+            }
+        }
+
+        shop.items.push(newItem);
 
         saveToLocal();
         e.target.reset();
@@ -1635,6 +1754,16 @@ const app = {
         const qtyLabel = document.getElementById('edit-item-qty-label');
         if (qtyLabel) qtyLabel.innerText = isWeight ? 'Weight (kg)' : 'Quantity';
         
+        const discType = item.discount ? item.discount.type : 'none';
+        document.getElementById('edit-item-discount-type').value = discType;
+        app.toggleDiscountInputs('edit');
+        if (discType !== 'none') {
+            const v1El = document.getElementById('edit-item-discount-v1');
+            const v2El = document.getElementById('edit-item-discount-v2');
+            if (v1El) v1El.value = item.discount.value1 || '';
+            if (v2El) v2El.value = item.discount.value2 || '';
+        }
+
         ui.showModal('edit-item-modal');
     },
 
@@ -1657,6 +1786,11 @@ const app = {
         } else {
             item.estPrice = price;
         }
+        
+        const discountType = document.getElementById('edit-item-discount-type').value;
+        const discountV1 = document.getElementById('edit-item-discount-v1') ? document.getElementById('edit-item-discount-v1').value : null;
+        const discountV2 = document.getElementById('edit-item-discount-v2') ? document.getElementById('edit-item-discount-v2').value : null;
+        item.discount = { type: discountType, value1: discountV1, value2: discountV2 };
 
         saveToLocal();
         ui.hideModal('edit-item-modal');
@@ -1706,7 +1840,7 @@ const app = {
             alert("Cart is empty");
             return;
         }
-        const cartTotal = cartItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+        const cartTotal = cartItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
         document.getElementById('checkout-cart-total').innerText = formatMoney(cartTotal);
         
         const container = document.getElementById('split-payments-container');
@@ -1783,7 +1917,7 @@ const app = {
         const shop = shops.find(s => s.id === currentShopId);
         if (!shop) return;
         const cartItems = shop.items.filter(i => i.status === 'cart');
-        const cartTotal = cartItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+        const cartTotal = cartItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
         
         let unlockedInputs = allInputs.filter(inp => !inp.readOnly && inp !== changedInput);
         if (unlockedInputs.length === 0) return; 
@@ -1805,7 +1939,7 @@ const app = {
         e.preventDefault();
         const shop = shops.find(s => s.id === currentShopId);
         const cartItems = shop.items.filter(i => i.status === 'cart');
-        const cartTotal = cartItems.reduce((acc, i) => acc + (i.estPrice * i.qty), 0);
+        const cartTotal = cartItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
         
         const rows = document.querySelectorAll('.split-payment-row');
         let totalEntered = 0;

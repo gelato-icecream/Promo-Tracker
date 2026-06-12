@@ -1156,14 +1156,14 @@ const app = {
         inputsDiv.style.display = type === 'none' ? 'none' : 'flex';
         
         if (type === 'percent') {
-            inputsDiv.innerHTML = `<input type="number" id="${prefix}-discount-v1" placeholder="% off" style="flex: 1; min-width: 0;">`;
+            inputsDiv.innerHTML = `<input type="number" id="${prefix}-discount-v1" placeholder="% off" step="0.01" style="flex: 1; min-width: 0;">`;
         } else if (type === 'amount') {
-            inputsDiv.innerHTML = `<input type="number" id="${prefix}-discount-v1" placeholder="$ off" style="flex: 1; min-width: 0;">`;
+            inputsDiv.innerHTML = `<input type="number" id="${prefix}-discount-v1" placeholder="$ off" step="0.01" style="flex: 1; min-width: 0;">`;
         } else if (type === 'bulk') {
             inputsDiv.innerHTML = `
                 <input type="number" id="${prefix}-discount-v1" placeholder="Buy Qty" style="flex: 1; min-width: 0;">
                 <span style="display:flex;align-items:center;color:var(--text-secondary)">for</span>
-                <input type="number" id="${prefix}-discount-v2" placeholder="$" style="flex: 1; min-width: 0;">
+                <input type="number" id="${prefix}-discount-v2" placeholder="$" step="0.01" style="flex: 1; min-width: 0;">
             `;
         } else if (type === 'bogo') {
             inputsDiv.innerHTML = `

@@ -932,6 +932,15 @@ main {
                         <div id="add-discount-inputs" style="display: none; gap: 10px; margin-top: 10px;">
                         </div>
                     </div>
+                    <div class="input-group" id="item-bonus-points-group" style="display: none;">
+                        <label>Bonus Points (Optional)</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="number" id="item-bonus-points" min="0" step="1" placeholder="e.g. 50" style="flex: 1;">
+                            <select id="item-bonus-reward-id" class="card-select" style="flex: 2;">
+                                <option value="">Select Reward...</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-text" onclick="ui.hideModal('add-item-modal')">Cancel</button>
                         <button type="submit" class="btn-primary">Add</button>
@@ -971,6 +980,15 @@ main {
                             <option value="bogo">Buy X Get Y Free</option>
                         </select>
                         <div id="edit-discount-inputs" style="display: none; gap: 10px; margin-top: 10px;">
+                        </div>
+                    </div>
+                    <div class="input-group" id="edit-item-bonus-points-group" style="display: none;">
+                        <label>Bonus Points (Optional)</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="number" id="edit-item-bonus-points" min="0" step="1" placeholder="e.g. 50" style="flex: 1;">
+                            <select id="edit-item-bonus-reward-id" class="card-select" style="flex: 2;">
+                                <option value="">Select Reward...</option>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-actions">

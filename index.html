@@ -1062,6 +1062,13 @@ main {
                         <input type="number" id="edit-card-balance" step="0.01" required>
                     </div>
                     <div class="input-group">
+                        <label>Adjust Balance (+ / -)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="edit-card-adjust" step="0.01" placeholder="+ / -" style="flex: 1;">
+                            <button type="button" class="btn-primary" onclick="app.adjustCardBalance()" style="padding: 0 15px;">Apply</button>
+                        </div>
+                    </div>
+                    <div class="input-group">
                         <label>Website URL (Optional)</label>
                         <input type="url" id="edit-card-website" placeholder="https://...">
                     </div>
@@ -1563,6 +1570,7 @@ const app = {
                         ${expirationText}<br>
                         ${progressText}
                     </div>
+                    <button class="btn-primary" style="margin-top: 10px; width: 100%; font-size: 14px; padding: 6px;" onclick="app.spendPoints('${r.id}')">Spend Points</button>
                 </div>
                 <div class="wallet-card-actions" style="flex-direction:column;justify-content:center;">
                     <button class="icon-btn" onclick="app.openEditReward('${r.id}')">
@@ -1575,6 +1583,26 @@ const app = {
             `;
             list.appendChild(el);
         });
+    },
+
+    spendPoints: (id) => {
+        const r = rewards.find(x => x.id === id);
+        if (!r) return;
+        const spendStr = prompt(`How many points would you like to spend from ${r.name}? (Current: ${parseFloat(r.currentPoints).toFixed(1)} pts)`);
+        if (spendStr !== null && spendStr.trim() !== '') {
+            const spend = parseFloat(spendStr);
+            if (!isNaN(spend) && spend > 0) {
+                if (spend > r.currentPoints) {
+                    alert('Not enough points!');
+                } else {
+                    r.currentPoints -= spend;
+                    saveToLocal();
+                    app.renderRewards();
+                }
+            } else {
+                alert('Invalid amount');
+            }
+        }
     },
 
     adjustPoints: (id) => {
@@ -2759,7 +2787,19 @@ const app = {
         document.getElementById('edit-card-balance').value = card.balance.toFixed(2);
         document.getElementById('edit-card-website').value = card.websiteUrl || '';
         document.getElementById('edit-card-app').value = card.appUrl || '';
+        document.getElementById('edit-card-adjust').value = '';
         ui.showModal('edit-card-modal');
+    },
+
+    adjustCardBalance: () => {
+        const adjustInput = document.getElementById('edit-card-adjust');
+        const balanceInput = document.getElementById('edit-card-balance');
+        const adjustVal = parseFloat(adjustInput.value);
+        const currentBalance = parseFloat(balanceInput.value) || 0;
+        if (!isNaN(adjustVal)) {
+            balanceInput.value = Math.max(0, currentBalance + adjustVal).toFixed(2);
+            adjustInput.value = '';
+        }
     },
 
     handleEditCard: (e) => {

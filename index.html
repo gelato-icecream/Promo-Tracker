@@ -1009,6 +1009,17 @@ main {
                 <h2>Checkout Cart</h2>
                 <p>Total: <span id="checkout-cart-total" style="font-weight: bold; color: var(--accent); font-size: 20px;">$0.00</span></p>
                 <form id="checkout-cart-form" onsubmit="app.handleCheckoutCart(event)">
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Receipt Discount (Whole Order)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="checkout-discount-type" class="card-select" style="flex: 1;" onchange="app.updateCheckoutTotal(true)">
+                                <option value="none">None</option>
+                                <option value="percent">Percentage Off (%)</option>
+                                <option value="amount">Amount Off ($)</option>
+                            </select>
+                            <input type="number" id="checkout-discount-value" placeholder="Value" step="0.01" style="flex: 1; display: none;" oninput="app.updateCheckoutTotal(true)">
+                        </div>
+                    </div>
                     <div id="split-payments-container" style="margin-top: 15px;">
                         <!-- Rows added via JS -->
                     </div>
@@ -1833,6 +1844,48 @@ const app = {
         app.updateProgress();
     },
 
+    updateCheckoutTotal: (updateSplits = false) => {
+        const shop = shops.find(s => s.id === currentShopId);
+        if (!shop) return 0;
+        const cartItems = shop.items.filter(i => i.status === 'cart');
+        let cartTotal = cartItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
+        
+        const typeEl = document.getElementById('checkout-discount-type');
+        const valInput = document.getElementById('checkout-discount-value');
+        if (!typeEl || !valInput) return cartTotal;
+
+        const type = typeEl.value;
+        if (type === 'none') {
+            valInput.style.display = 'none';
+        } else {
+            valInput.style.display = 'block';
+            if (type === 'percent') valInput.placeholder = '% Off';
+            if (type === 'amount') valInput.placeholder = '$ Off';
+        }
+
+        const discountVal = parseFloat(valInput.value) || 0;
+        
+        if (type === 'percent' && discountVal > 0) {
+            cartTotal = cartTotal * (1 - discountVal / 100);
+        } else if (type === 'amount' && discountVal > 0) {
+            cartTotal = Math.max(0, cartTotal - discountVal);
+        }
+        
+        document.getElementById('checkout-cart-total').innerText = formatMoney(cartTotal);
+
+        if (updateSplits) {
+            const allInputs = Array.from(document.querySelectorAll('.split-amount-input'));
+            const unlockedInputs = allInputs.filter(inp => !inp.readOnly);
+            if (unlockedInputs.length === 1) {
+                unlockedInputs[0].value = cartTotal.toFixed(2);
+            } else if (unlockedInputs.length > 1) {
+                // Adjust the last unlocked input to absorb the difference
+                app.handleSplitAmountInput({ target: null });
+            }
+        }
+        return cartTotal;
+    },
+
     openCheckoutModal: () => {
         const shop = shops.find(s => s.id === currentShopId);
         const cartItems = shop.items.filter(i => i.status === 'cart');
@@ -1840,8 +1893,16 @@ const app = {
             alert("Cart is empty");
             return;
         }
-        const cartTotal = cartItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
-        document.getElementById('checkout-cart-total').innerText = formatMoney(cartTotal);
+        
+        const typeEl = document.getElementById('checkout-discount-type');
+        const valInput = document.getElementById('checkout-discount-value');
+        if (typeEl) typeEl.value = 'none';
+        if (valInput) {
+            valInput.value = '';
+            valInput.style.display = 'none';
+        }
+
+        const cartTotal = app.updateCheckoutTotal();
         
         const container = document.getElementById('split-payments-container');
         if (container) {
@@ -1914,10 +1975,7 @@ const app = {
         const allInputs = Array.from(document.querySelectorAll('.split-amount-input'));
         if (allInputs.length <= 1) return;
         
-        const shop = shops.find(s => s.id === currentShopId);
-        if (!shop) return;
-        const cartItems = shop.items.filter(i => i.status === 'cart');
-        const cartTotal = cartItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
+        const cartTotal = app.updateCheckoutTotal();
         
         let unlockedInputs = allInputs.filter(inp => !inp.readOnly && inp !== changedInput);
         if (unlockedInputs.length === 0) return; 
@@ -1939,7 +1997,9 @@ const app = {
         e.preventDefault();
         const shop = shops.find(s => s.id === currentShopId);
         const cartItems = shop.items.filter(i => i.status === 'cart');
-        const cartTotal = cartItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
+        
+        const rawCartTotal = cartItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'estPrice'), 0);
+        const cartTotal = app.updateCheckoutTotal();
         
         const rows = document.querySelectorAll('.split-payment-row');
         let totalEntered = 0;
@@ -1976,10 +2036,15 @@ const app = {
         app.renderWallet();
         const receiptId = generateId();
         const boughtAt = new Date().toISOString();
+        
+        let ratio = 1;
+        if (rawCartTotal > 0 && cartTotal !== rawCartTotal) {
+            ratio = cartTotal / rawCartTotal;
+        }
 
         cartItems.forEach(i => {
             i.status = 'bought';
-            i.actualPrice = i.estPrice; // default actual to est for simplicity in batch checkout
+            i.actualPrice = i.estPrice * ratio; // distribute the discount proportionally to the actualPrice
             i.receiptId = receiptId;
             i.boughtAt = boughtAt;
             i.paymentMethods = paymentMethods;
@@ -2169,7 +2234,8 @@ const app = {
                 { facingMode: "environment" }, 
                 {
                     fps: 10,
-                    qrbox: { width: 250, height: 150 }
+                    qrbox: { width: 250, height: 150 },
+                    disableFlip: false
                 },
                 (decodedText, decodedResult) => {
                     app.handleBarcodeSuccess(decodedText);

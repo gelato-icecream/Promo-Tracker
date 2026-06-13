@@ -650,6 +650,19 @@ main {
 .receipt-card.expanded .chevron { transform: rotate(180deg); }
 .chevron { transition: transform 0.3s ease; }
 
+@keyframes flashAlert {
+    0% { background-color: rgba(231, 76, 60, 0.8) !important; color: white !important; transform: scale(1.02); }
+    15% { background-color: rgba(231, 76, 60, 0.2) !important; color: var(--text-primary) !important; transform: scale(1); }
+    30% { background-color: rgba(231, 76, 60, 0.8) !important; color: white !important; transform: scale(1.02); }
+    45% { background-color: rgba(231, 76, 60, 0.1) !important; color: var(--text-primary) !important; transform: scale(1); }
+    100% { background-color: rgba(231, 76, 60, 0.1) !important; color: var(--text-primary) !important; transform: scale(1); }
+}
+
+.flash-alert {
+    animation: flashAlert 2.5s ease-out forwards;
+    border-left: 4px solid var(--danger) !important;
+}
+
     </style>
 </head>
 <body>
@@ -2435,6 +2448,9 @@ const app = {
         
         if (messages.length > 0) {
             notifContainer.innerHTML = messages.map(m => `<div style="margin-bottom: 4px;">&#8226; ${m}</div>`).join('');
+            notifContainer.classList.remove('flash-alert');
+            void notifContainer.offsetWidth; // Force reflow to restart animation
+            notifContainer.classList.add('flash-alert');
             notifContainer.style.display = 'block';
         } else {
             notifContainer.style.display = 'none';

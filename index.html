@@ -2082,6 +2082,11 @@ const app = {
                     discountBadge = `<span style="font-size:10px; background:var(--accent-glow); color:var(--accent); padding:2px 6px; border-radius:4px; margin-top:4px; display:inline-block;">${dText}</span>`;
                 }
 
+                let bpBadge = '';
+                if (item.bonusPoints > 0) {
+                    bpBadge = `<span style="font-size:10px; background:var(--accent-glow); color:var(--accent); padding:2px 6px; border-radius:4px; margin-top:4px; margin-left:4px; display:inline-block;">+${item.bonusPoints} pts</span>`;
+                }
+
                     el.innerHTML = `
                         <div class="item-left">
                             <div class="checkbox checked" style="pointer-events:none; opacity:0.5;">
@@ -2091,6 +2096,7 @@ const app = {
                                 <h4>${item.isWeightBased ? item.qty + 'kg ' : (item.qty > 1 ? item.qty + 'x ' : '')}${item.name}</h4>
                                 <p>Actual: ${formatMoney(item.actualPrice)}</p>
                                 ${discountBadge}
+                                ${bpBadge}
                             </div>
                         </div>
                         <div class="item-actions">
@@ -2120,6 +2126,11 @@ const app = {
                     discountBadge = `<span style="font-size:10px; background:var(--accent-glow); color:var(--accent); padding:2px 6px; border-radius:4px; margin-top:4px; display:inline-block;">${dText}</span>`;
                 }
 
+                let bpBadge = '';
+                if (item.bonusPoints > 0) {
+                    bpBadge = `<span style="font-size:10px; background:var(--accent-glow); color:var(--accent); padding:2px 6px; border-radius:4px; margin-top:4px; margin-left:4px; display:inline-block;">+${item.bonusPoints} pts</span>`;
+                }
+
                 el.innerHTML = `
                     <div class="item-left">
                         <div class="checkbox ${item.status === 'cart' ? 'checked' : ''}" onclick="app.toggleItemStatus('${item.id}')">
@@ -2129,6 +2140,7 @@ const app = {
                             <h4>${item.isWeightBased ? item.qty + 'kg ' : (item.qty > 1 ? item.qty + 'x ' : '')}${item.name}</h4>
                             <p>Est: ${formatMoney(item.estPrice)}</p>
                             ${discountBadge}
+                            ${bpBadge}
                         </div>
                     </div>
                     <div class="item-actions">
@@ -2192,6 +2204,21 @@ const app = {
             actInput.required = false;
         }
 
+        const enableRewards = localStorage.getItem('promo_enable_rewards') === 'true';
+        const bonusGroup = document.getElementById('item-bonus-points-group');
+        if (enableRewards) {
+            bonusGroup.style.display = 'block';
+            document.getElementById('item-bonus-points').value = '';
+            const rewardSelect = document.getElementById('item-bonus-reward-id');
+            rewardSelect.innerHTML = '<option value="">Select Reward...</option>';
+            const activeRewards = rewards.filter(r => r.linkedShopIds && r.linkedShopIds.includes(currentShopId));
+            activeRewards.forEach(r => {
+                rewardSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`;
+            });
+        } else {
+            bonusGroup.style.display = 'none';
+        }
+
         ui.showModal('add-item-modal');
     },
 
@@ -2224,6 +2251,14 @@ const app = {
         const discountV2 = document.getElementById('item-discount-v2') ? document.getElementById('item-discount-v2').value : null;
         const discount = { type: discountType, value1: discountV1, value2: discountV2 };
 
+        const enableRewards = localStorage.getItem('promo_enable_rewards') === 'true';
+        let bonusPoints = 0;
+        let bonusRewardId = '';
+        if (enableRewards) {
+            bonusPoints = parseFloat(document.getElementById('item-bonus-points').value) || 0;
+            bonusRewardId = document.getElementById('item-bonus-reward-id').value;
+        }
+
         let newItem = {
             id: generateId(),
             name,
@@ -2232,7 +2267,9 @@ const app = {
             status: status,
             actualPrice: actualPrice,
             isWeightBased,
-            discount
+            discount,
+            bonusPoints,
+            bonusRewardId
         };
 
         if (isBought) {
@@ -2246,6 +2283,12 @@ const app = {
                 }
             }
             app.calculatePoints(currentShopId, actualTotal);
+            if (newItem.bonusPoints > 0 && newItem.bonusRewardId) {
+                const reward = rewards.find(r => r.id === newItem.bonusRewardId);
+                if (reward) {
+                    reward.currentPoints += newItem.bonusPoints;
+                }
+            }
         }
 
         shop.items.push(newItem);
@@ -2294,6 +2337,21 @@ const app = {
             if (v2El) v2El.value = item.discount.value2 || '';
         }
 
+        const enableRewards = localStorage.getItem('promo_enable_rewards') === 'true';
+        const bonusGroup = document.getElementById('edit-item-bonus-points-group');
+        if (enableRewards) {
+            bonusGroup.style.display = 'block';
+            document.getElementById('edit-item-bonus-points').value = item.bonusPoints || '';
+            const rewardSelect = document.getElementById('edit-item-bonus-reward-id');
+            rewardSelect.innerHTML = '<option value="">Select Reward...</option>';
+            const activeRewards = rewards.filter(r => r.linkedShopIds && r.linkedShopIds.includes(currentShopId));
+            activeRewards.forEach(r => {
+                rewardSelect.innerHTML += `<option value="${r.id}" ${item.bonusRewardId === r.id ? 'selected' : ''}>${r.name}</option>`;
+            });
+        } else {
+            bonusGroup.style.display = 'none';
+        }
+
         ui.showModal('edit-item-modal');
     },
 
@@ -2317,6 +2375,12 @@ const app = {
             item.estPrice = price;
         }
         
+        const enableRewards = localStorage.getItem('promo_enable_rewards') === 'true';
+        if (enableRewards) {
+            item.bonusPoints = parseFloat(document.getElementById('edit-item-bonus-points').value) || 0;
+            item.bonusRewardId = document.getElementById('edit-item-bonus-reward-id').value;
+        }
+
         const discountType = document.getElementById('edit-item-discount-type').value;
         const discountV1 = document.getElementById('edit-item-discount-v1') ? document.getElementById('edit-item-discount-v1').value : null;
         const discountV2 = document.getElementById('edit-item-discount-v2') ? document.getElementById('edit-item-discount-v2').value : null;
@@ -2641,6 +2705,15 @@ const app = {
         });
         
         app.calculatePoints(currentShopId, cartTotal, optOutRewardIds);
+        
+        cartItems.forEach(i => {
+            if (i.bonusPoints > 0 && i.bonusRewardId && !optOutRewardIds.includes(i.bonusRewardId)) {
+                const reward = rewards.find(r => r.id === i.bonusRewardId);
+                if (reward) {
+                    reward.currentPoints += i.bonusPoints;
+                }
+            }
+        });
         saveToLocal();
         ui.hideModal('checkout-cart-modal');
         currentTab = 'bought';
@@ -2680,6 +2753,12 @@ const app = {
         }
         
         app.calculatePoints(currentShopId, actualPrice);
+        if (item.bonusPoints > 0 && item.bonusRewardId) {
+            const reward = rewards.find(r => r.id === item.bonusRewardId);
+            if (reward) {
+                reward.currentPoints += item.bonusPoints;
+            }
+        }
         saveToLocal();
         ui.hideModal('actual-price-modal');
         app.renderItems();

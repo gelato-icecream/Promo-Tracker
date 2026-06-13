@@ -1154,16 +1154,11 @@ main {
                     </div>
                     <div class="input-group">
                         <label>Earning Style</label>
-                        <select id="reward-earning-style" class="card-select" onchange="app.toggleCumulativeRepeat('add')">
-                            <option value="exact">Exact Multiples Only (e.g. $1 for 10pts)</option>
-                            <option value="proportional">Proportional Earnings (e.g. $1.50 for 15pts)</option>
-                            <option value="cumulative">Cumulative Spend Challenge (e.g. $50 total = 100pts)</option>
+                        <select id="reward-earning-style" class="card-select">
+                            <option value="cumulative">Set Target: Spend a certain amount to get points</option>
+                            <option value="proportional">Proportional: Earn points for every dollar spent</option>
                         </select>
                     </div>
-                    <label id="reward-cumulative-repeat-label" class="shop-checkbox-item" style="margin-bottom: 20px; display: none;">
-                        <input type="checkbox" id="reward-cumulative-repeat">
-                        Repeat challenge when target reached
-                    </label>
                     <label class="shop-checkbox-item" style="margin-bottom: 20px;">
                         <input type="checkbox" id="reward-notifications">
                         Enable checkout reminders
@@ -1218,16 +1213,11 @@ main {
                     </div>
                     <div class="input-group">
                         <label>Earning Style</label>
-                        <select id="edit-reward-earning-style" class="card-select" onchange="app.toggleCumulativeRepeat('edit')">
-                            <option value="exact">Exact Multiples Only (e.g. $1 for 10pts)</option>
-                            <option value="proportional">Proportional Earnings (e.g. $1.50 for 15pts)</option>
-                            <option value="cumulative">Cumulative Spend Challenge (e.g. $50 total = 100pts)</option>
+                        <select id="edit-reward-earning-style" class="card-select">
+                            <option value="cumulative">Set Target: Spend a certain amount to get points</option>
+                            <option value="proportional">Proportional: Earn points for every dollar spent</option>
                         </select>
                     </div>
-                    <label id="edit-reward-cumulative-repeat-label" class="shop-checkbox-item" style="margin-bottom: 20px; display: none;">
-                        <input type="checkbox" id="edit-reward-cumulative-repeat">
-                        Repeat challenge when target reached
-                    </label>
                     <label class="shop-checkbox-item" style="margin-bottom: 20px;">
                         <input type="checkbox" id="edit-reward-notifications">
                         Enable checkout reminders
@@ -1517,15 +1507,7 @@ const app = {
         }
     },
 
-    toggleCumulativeRepeat: (mode) => {
-        const style = document.getElementById(mode === 'add' ? 'reward-earning-style' : 'edit-reward-earning-style').value;
-        const label = document.getElementById(mode === 'add' ? 'reward-cumulative-repeat-label' : 'edit-reward-cumulative-repeat-label');
-        if (style === 'cumulative') {
-            label.style.display = 'flex';
-        } else {
-            label.style.display = 'none';
-        }
-    },
+
 
     renderRewards: () => {
         const list = document.getElementById('rewards-list');
@@ -1545,17 +1527,24 @@ const app = {
                 shopNames = linkedNames.join(', ');
             }
             
-            let earningStyleText = '';
             let progressText = '';
-            if (r.earningStyle === 'cumulative') {
-                earningStyleText = 'Cumulative Spend Challenge';
-                progressText = `<div style="margin-top: 6px; font-weight: bold; color: var(--text-primary);">$${parseFloat(r.currentSpendProgress).toFixed(2)} / $${r.spendThreshold} spent</div>`;
+            let expirationText = `${r.startDate ? r.startDate : 'Anytime'} - ${r.endDate ? r.endDate : 'Ongoing'}`;
+            const now = new Date().toISOString().split('T')[0];
+            if (r.endDate && r.endDate < now) {
+                expirationText = `<span style="color: var(--danger); font-weight: bold;">Offer Ended</span>`;
+            }
+            
+            if (r.earningStyle === 'cumulative' || r.earningStyle === 'exact') {
+                const needed = r.spendThreshold - r.currentSpendProgress;
+                progressText = `<div style="margin-top: 6px; font-weight: bold; color: var(--text-primary);">Spent: $${parseFloat(r.currentSpendProgress).toFixed(2)} / $${r.spendThreshold.toFixed(2)} needed</div>`;
+                if (r.currentSpendProgress >= r.spendThreshold) {
+                    progressText += `<div style="color: var(--accent); margin-top: 2px;">Goal Reached! Earned ${r.pointsEarned} pts.</div>`;
+                } else {
+                    progressText += `<div style="color: var(--text-secondary); margin-top: 2px;">$${needed.toFixed(2)} more to earn ${r.pointsEarned} pts</div>`;
+                }
             } else if (r.earningStyle === 'proportional') {
-                earningStyleText = 'Proportional Earnings';
-                progressText = `Earn ${r.pointsEarned} pts per $${r.spendThreshold} spent (${earningStyleText})`;
-            } else {
-                earningStyleText = 'Exact Multiples Only';
-                progressText = `Earn ${r.pointsEarned} pts per $${r.spendThreshold} spent (${earningStyleText})`;
+                progressText = `<div style="margin-top: 6px; font-weight: bold; color: var(--text-primary);">Total Spent: $${parseFloat(r.currentSpendProgress).toFixed(2)}</div>`;
+                progressText += `<div style="color: var(--text-secondary); margin-top: 2px;">(Converted to ${parseFloat(r.currentPoints).toFixed(1)} pts)</div>`;
             }
 
             const el = document.createElement('div');
@@ -1571,7 +1560,7 @@ const app = {
                         </button>
                     </div>
                     <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
-                        ${r.startDate ? r.startDate : 'Anytime'} - ${r.endDate ? r.endDate : 'Ongoing'}<br>
+                        ${expirationText}<br>
                         ${progressText}
                     </div>
                 </div>
@@ -1614,7 +1603,6 @@ const app = {
                     </label>`;
             });
         }
-        document.getElementById('reward-cumulative-repeat-label').style.display = 'none';
         ui.showModal('add-reward-modal');
     },
 
@@ -1628,7 +1616,6 @@ const app = {
         const endDate = document.getElementById('reward-end').value;
         const earningStyle = document.getElementById('reward-earning-style').value;
         const enableNotifications = document.getElementById('reward-notifications').checked;
-        const cumulativeRepeat = document.getElementById('reward-cumulative-repeat').checked;
         const spendThreshold = parseFloat(document.getElementById('reward-spend').value);
         const pointsEarned = parseFloat(document.getElementById('reward-points').value);
         const currentPoints = parseFloat(document.getElementById('reward-current-balance').value) || 0;
@@ -1641,7 +1628,6 @@ const app = {
             endDate,
             earningStyle,
             enableNotifications,
-            cumulativeRepeat,
             currentSpendProgress: 0,
             spendThreshold,
             pointsEarned,
@@ -1661,10 +1647,9 @@ const app = {
         document.getElementById('edit-reward-name').value = r.name;
         document.getElementById('edit-reward-start').value = r.startDate || '';
         document.getElementById('edit-reward-end').value = r.endDate || '';
-        document.getElementById('edit-reward-earning-style').value = r.earningStyle || 'exact';
+        // Map old 'exact' to 'cumulative' for UI
+        document.getElementById('edit-reward-earning-style').value = (r.earningStyle === 'exact') ? 'cumulative' : (r.earningStyle || 'cumulative');
         document.getElementById('edit-reward-notifications').checked = r.enableNotifications || false;
-        document.getElementById('edit-reward-cumulative-repeat').checked = r.cumulativeRepeat || false;
-        document.getElementById('edit-reward-cumulative-repeat-label').style.display = r.earningStyle === 'cumulative' ? 'flex' : 'none';
         document.getElementById('edit-reward-spend').value = r.spendThreshold;
         document.getElementById('edit-reward-points').value = r.pointsEarned;
         document.getElementById('edit-reward-current-balance').value = r.currentPoints;
@@ -1701,7 +1686,6 @@ const app = {
         r.endDate = document.getElementById('edit-reward-end').value;
         r.earningStyle = document.getElementById('edit-reward-earning-style').value;
         r.enableNotifications = document.getElementById('edit-reward-notifications').checked;
-        r.cumulativeRepeat = document.getElementById('edit-reward-cumulative-repeat').checked;
         r.spendThreshold = parseFloat(document.getElementById('edit-reward-spend').value);
         r.pointsEarned = parseFloat(document.getElementById('edit-reward-points').value);
         r.currentPoints = parseFloat(document.getElementById('edit-reward-current-balance').value) || 0;
@@ -1729,29 +1713,18 @@ const app = {
             
             if (r.linkedShopIds && r.linkedShopIds.includes(shopId)) {
                 if ((!r.startDate || r.startDate <= now) && (!r.endDate || r.endDate >= now)) {
-                    if (r.earningStyle === 'cumulative') {
-                        if (!r.cumulativeRepeat && r.currentSpendProgress >= r.spendThreshold) return;
+                    if (r.earningStyle === 'cumulative' || r.earningStyle === 'exact') {
+                        if (r.currentSpendProgress >= r.spendThreshold) return; // one-time only
                         r.currentSpendProgress += amountSpent;
                         if (r.currentSpendProgress >= r.spendThreshold) {
-                            const sets = Math.floor(r.currentSpendProgress / r.spendThreshold);
-                            if (r.cumulativeRepeat) {
-                                r.currentPoints += (sets * r.pointsEarned);
-                                r.currentSpendProgress = r.currentSpendProgress % r.spendThreshold;
-                            } else {
-                                r.currentPoints += r.pointsEarned;
-                                r.currentSpendProgress = r.spendThreshold;
-                            }
+                            r.currentPoints += r.pointsEarned;
+                            r.currentSpendProgress = r.spendThreshold;
                         }
                         updated = true;
                     } else if (r.earningStyle === 'proportional') {
+                        r.currentSpendProgress += amountSpent;
                         r.currentPoints += (amountSpent / r.spendThreshold) * r.pointsEarned;
                         updated = true;
-                    } else {
-                        const sets = Math.floor(amountSpent / r.spendThreshold);
-                        if (sets > 0) {
-                            r.currentPoints += (sets * r.pointsEarned);
-                            updated = true;
-                        }
                     }
                 }
             }
@@ -1941,9 +1914,9 @@ const app = {
             const now = new Date().toISOString().split('T')[0];
             let challengeHTML = '';
             rewards.forEach(r => {
-                if (r.earningStyle === 'cumulative' && r.linkedShopIds && r.linkedShopIds.includes(shop.id)) {
+                if ((r.earningStyle === 'cumulative' || r.earningStyle === 'exact') && r.linkedShopIds && r.linkedShopIds.includes(shop.id)) {
                     if ((!r.startDate || r.startDate <= now) && (!r.endDate || r.endDate >= now)) {
-                        if (!r.cumulativeRepeat && r.currentSpendProgress >= r.spendThreshold) return;
+                        if (r.currentSpendProgress >= r.spendThreshold) return;
                         const percent = Math.min((r.currentSpendProgress / r.spendThreshold) * 100, 100);
                         challengeHTML += `
                             <div style="background: var(--bg-card); border: 1px solid var(--accent); border-radius: 12px; padding: 10px;">
@@ -2416,26 +2389,15 @@ const app = {
         rewards.forEach(r => {
             if (r.linkedShopIds && r.linkedShopIds.includes(currentShopId) && r.enableNotifications) {
                 if ((!r.startDate || r.startDate <= now) && (!r.endDate || r.endDate >= now)) {
-                    if (r.earningStyle === 'exact') {
-                        const remainder = cartTotal % r.spendThreshold;
-                        const needed = r.spendThreshold - remainder;
-                        if (needed > 0 && needed < r.spendThreshold) {
-                            messages.push(`Spend <b>$${needed.toFixed(2)}</b> more to earn another ${r.pointsEarned} pts for <b>${r.name}</b>.`);
-                        } else if (needed === r.spendThreshold && cartTotal > 0) {
-                            messages.push(`You are exactly at the threshold! Spend <b>$${r.spendThreshold.toFixed(2)}</b> more to earn another ${r.pointsEarned} pts for <b>${r.name}</b>.`);
-                        } else if (cartTotal === 0) {
-                            messages.push(`Spend <b>$${r.spendThreshold.toFixed(2)}</b> to earn ${r.pointsEarned} pts for <b>${r.name}</b>.`);
-                        }
-                    } else if (r.earningStyle === 'cumulative') {
-                        if (!r.cumulativeRepeat && r.currentSpendProgress >= r.spendThreshold) {
+                    if (r.earningStyle === 'cumulative' || r.earningStyle === 'exact') {
+                        if (r.currentSpendProgress >= r.spendThreshold) {
                             messages.push(`You have completed the challenge for <b>${r.name}</b>!`);
                         } else {
                             const combined = r.currentSpendProgress + cartTotal;
-                            const remainder = combined % r.spendThreshold;
-                            const needed = r.spendThreshold - remainder;
                             if (combined >= r.spendThreshold) {
                                 messages.push(`This order hits your goal! You will earn ${r.pointsEarned} pts for <b>${r.name}</b>.`);
-                            } else if (needed > 0) {
+                            } else {
+                                const needed = r.spendThreshold - combined;
                                 messages.push(`Spend <b>$${needed.toFixed(2)}</b> more to hit your goal for <b>${r.name}</b>.`);
                             }
                         }

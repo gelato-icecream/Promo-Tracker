@@ -1211,6 +1211,10 @@ main {
                         </div>
                     </div>
                     <div class="input-group">
+                        <label>Current Progress ($ Spent) (Optional)</label>
+                        <input type="number" id="reward-current-spend" step="0.01" placeholder="0">
+                    </div>
+                    <div class="input-group">
                         <label>Current Balance (Optional)</label>
                         <input type="number" id="reward-current-balance" step="0.1" placeholder="0">
                     </div>
@@ -1268,6 +1272,10 @@ main {
                             <label>Points</label>
                             <input type="number" id="edit-reward-points" step="0.1" required>
                         </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Current Progress ($ Spent)</label>
+                        <input type="number" id="edit-reward-current-spend" step="0.01" required>
                     </div>
                     <div class="input-group">
                         <label>Current Balance</label>
@@ -1572,14 +1580,24 @@ const app = {
             
             if (r.earningStyle === 'cumulative' || r.earningStyle === 'exact') {
                 const needed = r.spendThreshold - r.currentSpendProgress;
-                progressText = `<div style="margin-top: 6px; font-weight: bold; color: var(--text-primary);">Spent: $${parseFloat(r.currentSpendProgress).toFixed(2)} / $${r.spendThreshold.toFixed(2)} needed</div>`;
+                progressText = `<div style="margin-top: 6px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; flex-wrap: wrap;">
+                    Spent: $${parseFloat(r.currentSpendProgress).toFixed(2)} / $${r.spendThreshold.toFixed(2)} needed
+                    <button class="icon-btn" style="padding: 2px; margin-left: 5px; color:var(--text-secondary);" onclick="app.adjustSpendProgress('${r.id}')" title="Adjust Spend Progress">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </button>
+                </div>`;
                 if (r.currentSpendProgress >= r.spendThreshold) {
                     progressText += `<div style="color: var(--accent); margin-top: 2px;">Goal Reached! Earned ${r.pointsEarned} pts.</div>`;
                 } else {
                     progressText += `<div style="color: var(--text-secondary); margin-top: 2px;">$${needed.toFixed(2)} more to earn ${r.pointsEarned} pts</div>`;
                 }
             } else if (r.earningStyle === 'proportional') {
-                progressText = `<div style="margin-top: 6px; font-weight: bold; color: var(--text-primary);">Total Spent: $${parseFloat(r.currentSpendProgress).toFixed(2)}</div>`;
+                progressText = `<div style="margin-top: 6px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; flex-wrap: wrap;">
+                    Total Spent: $${parseFloat(r.currentSpendProgress).toFixed(2)}
+                    <button class="icon-btn" style="padding: 2px; margin-left: 5px; color:var(--text-secondary);" onclick="app.adjustSpendProgress('${r.id}')" title="Adjust Spend Progress">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </button>
+                </div>`;
                 progressText += `<div style="color: var(--text-secondary); margin-top: 2px;">(Converted to ${parseFloat(r.currentPoints).toFixed(1)} pts)</div>`;
             }
 
@@ -1646,6 +1664,47 @@ const app = {
         }
     },
 
+    adjustSpendProgress: (id) => {
+        const r = rewards.find(x => x.id === id);
+        if (!r) return;
+        const current = parseFloat(r.currentSpendProgress || 0).toFixed(2);
+        const newVal = prompt(`Enter new total spent amount for ${r.name} (Current: $${current}):\n\n(Tip: Enter +X to add a receipt amount, e.g., +25.50)`, current);
+        if (newVal !== null) {
+            let parsedVal = 0;
+            let addedAmount = 0;
+            if (newVal.trim().startsWith('+')) {
+                addedAmount = parseFloat(newVal.trim().substring(1));
+                parsedVal = parseFloat(current) + addedAmount;
+            } else {
+                parsedVal = parseFloat(newVal);
+                addedAmount = parsedVal - parseFloat(current);
+            }
+            if (!isNaN(parsedVal) && parsedVal >= 0) {
+                if (addedAmount > 0) {
+                    if (r.earningStyle === 'cumulative' || r.earningStyle === 'exact') {
+                        r.currentSpendProgress = parsedVal;
+                        if (r.currentSpendProgress >= r.spendThreshold) {
+                            if (parseFloat(current) < r.spendThreshold) {
+                                r.currentPoints += r.pointsEarned;
+                                alert(`Goal Reached! You earned ${r.pointsEarned} points.`);
+                            }
+                            r.currentSpendProgress = r.spendThreshold;
+                        }
+                    } else if (r.earningStyle === 'proportional') {
+                        r.currentSpendProgress = parsedVal;
+                        r.currentPoints += (addedAmount / r.spendThreshold) * r.pointsEarned;
+                    }
+                } else {
+                    r.currentSpendProgress = parsedVal;
+                }
+                saveToLocal();
+                app.renderRewards();
+            } else {
+                alert('Invalid amount');
+            }
+        }
+    },
+
     openAddRewardModal: () => {
         const container = document.getElementById('reward-shop-checkboxes');
         container.innerHTML = '';
@@ -1676,6 +1735,7 @@ const app = {
         const spendThreshold = parseFloat(document.getElementById('reward-spend').value);
         const pointsEarned = parseFloat(document.getElementById('reward-points').value);
         const currentPoints = parseFloat(document.getElementById('reward-current-balance').value) || 0;
+        const currentSpendProgress = parseFloat(document.getElementById('reward-current-spend').value) || 0;
 
         rewards.push({
             id: generateId(),
@@ -1685,7 +1745,7 @@ const app = {
             endDate,
             earningStyle,
             enableNotifications,
-            currentSpendProgress: 0,
+            currentSpendProgress: currentSpendProgress,
             spendThreshold,
             pointsEarned,
             currentPoints
@@ -1710,6 +1770,7 @@ const app = {
         document.getElementById('edit-reward-spend').value = r.spendThreshold;
         document.getElementById('edit-reward-points').value = r.pointsEarned;
         document.getElementById('edit-reward-current-balance').value = r.currentPoints;
+        document.getElementById('edit-reward-current-spend').value = r.currentSpendProgress || 0;
         
         const container = document.getElementById('edit-reward-shop-checkboxes');
         container.innerHTML = '';
@@ -1746,6 +1807,7 @@ const app = {
         r.spendThreshold = parseFloat(document.getElementById('edit-reward-spend').value);
         r.pointsEarned = parseFloat(document.getElementById('edit-reward-points').value);
         r.currentPoints = parseFloat(document.getElementById('edit-reward-current-balance').value) || 0;
+        r.currentSpendProgress = parseFloat(document.getElementById('edit-reward-current-spend').value) || 0;
 
         saveToLocal();
         ui.hideModal('edit-reward-modal');

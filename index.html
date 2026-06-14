@@ -435,7 +435,15 @@ main {
 .shop-checkbox-item:active {
     transform: scale(0.98);
 }
-input[type="checkbox"] {
+.shop-checkbox-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent);
+    margin: 0;
+    cursor: pointer;
+}
+
+input[type="checkbox"].toggle-slider {
     appearance: none;
     -webkit-appearance: none;
     width: 44px !important;
@@ -450,7 +458,7 @@ input[type="checkbox"] {
     flex-shrink: 0;
 }
 
-input[type="checkbox"]::after {
+input[type="checkbox"].toggle-slider::after {
     content: '';
     position: absolute;
     top: 2px;
@@ -463,11 +471,11 @@ input[type="checkbox"]::after {
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-input[type="checkbox"]:checked {
+input[type="checkbox"].toggle-slider:checked {
     background: var(--accent);
 }
 
-input[type="checkbox"]:checked::after {
+input[type="checkbox"].toggle-slider:checked::after {
     transform: translateX(20px);
 }
 
@@ -851,7 +859,7 @@ input[type="checkbox"]:checked::after {
                     </button>
                 </div>
                 <div class="input-group" style="flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 20px;">
-                    <input type="checkbox" id="settings-enable-rewards" onchange="app.toggleRewardsTab(this.checked)" style="width: auto;">
+                    <input type="checkbox" id="settings-enable-rewards" class="toggle-slider" onchange="app.toggleRewardsTab(this.checked)" style="width: auto;">
                     <label for="settings-enable-rewards" style="margin: 0; font-weight: normal;">Enable Rewards Tab</label>
                 </div>
                 <div class="modal-actions">
@@ -930,7 +938,7 @@ input[type="checkbox"]:checked::after {
                         </div>
                     </div>
                     <div class="input-group" style="flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 10px;">
-                        <input type="checkbox" id="item-is-weight" onchange="app.toggleWeightMode('add', this.checked)" style="width: auto;">
+                        <input type="checkbox" id="item-is-weight" class="toggle-slider" onchange="app.toggleWeightMode('add', this.checked)" style="width: auto;">
                         <label for="item-is-weight" style="margin: 0; font-weight: normal;">Fresh Product (sold by weight)</label>
                     </div>
                     <div class="input-group" id="qty-group">
@@ -988,7 +996,7 @@ input[type="checkbox"]:checked::after {
                         <input type="text" id="edit-item-name" required list="item-history" oninput="app.handleItemNameInput(event, 'edit-item-price')">
                     </div>
                     <div class="input-group" style="flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 10px;">
-                        <input type="checkbox" id="edit-item-is-weight" onchange="app.toggleWeightMode('edit', this.checked)" style="width: auto;">
+                        <input type="checkbox" id="edit-item-is-weight" class="toggle-slider" onchange="app.toggleWeightMode('edit', this.checked)" style="width: auto;">
                         <label for="edit-item-is-weight" style="margin: 0; font-weight: normal;">Fresh Product (sold by weight)</label>
                     </div>
                     <div class="input-group">
@@ -1224,7 +1232,7 @@ input[type="checkbox"]:checked::after {
                         </select>
                     </div>
                     <label class="shop-checkbox-item" style="margin-bottom: 20px;">
-                        <input type="checkbox" id="reward-notifications">
+                        <input type="checkbox" id="reward-notifications" class="toggle-slider">
                         Enable checkout reminders
                     </label>
                     <div style="display: flex; gap: 10px; align-items: flex-end;">
@@ -1287,7 +1295,7 @@ input[type="checkbox"]:checked::after {
                         </select>
                     </div>
                     <label class="shop-checkbox-item" style="margin-bottom: 20px;">
-                        <input type="checkbox" id="edit-reward-notifications">
+                        <input type="checkbox" id="edit-reward-notifications" class="toggle-slider">
                         Enable checkout reminders
                     </label>
                     <div style="display: flex; gap: 10px; align-items: flex-end;">

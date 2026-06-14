@@ -9,6 +9,7 @@
     <title>PromoTracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
 :root {
     --bg-dark: #0f172a;
@@ -1038,6 +1039,8 @@ main {
             </div>
         </div>
 
+        <datalist id="wallet-groups"></datalist>
+
         <div id="add-card-modal" class="modal-overlay">
             <div class="modal">
                 <h2>Add Card</h2>
@@ -1045,6 +1048,10 @@ main {
                     <div class="input-group">
                         <label>Card Name</label>
                         <input type="text" id="card-name" required placeholder="e.g. Target Gift Card">
+                    </div>
+                    <div class="input-group">
+                        <label>Group (Optional)</label>
+                        <input type="text" id="card-group" list="wallet-groups" placeholder="e.g. Groceries">
                     </div>
                     <div class="input-group">
                         <label>Current Balance ($)</label>
@@ -1074,6 +1081,10 @@ main {
                     <div class="input-group">
                         <label>Card Name</label>
                         <input type="text" id="edit-card-name" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Group (Optional)</label>
+                        <input type="text" id="edit-card-group" list="wallet-groups" placeholder="e.g. Groceries">
                     </div>
                     <div class="input-group">
                         <label>Current Balance ($)</label>
@@ -2799,6 +2810,12 @@ const app = {
         if(!list) return;
         list.innerHTML = '';
         
+        const datalist = document.getElementById('wallet-groups');
+        if (datalist) {
+            const uniqueGroups = [...new Set(wallets.map(w => w.group).filter(Boolean))];
+            datalist.innerHTML = uniqueGroups.map(g => `<option value="${g}"></option>`).join('');
+        }
+
         const total = wallets.reduce((acc, w) => acc + w.balance, 0);
         document.getElementById('wallet-total').innerText = formatMoney(total);
 
@@ -2808,26 +2825,79 @@ const app = {
             return;
         }
 
-        wallets.forEach(card => {
-            const el = document.createElement('div');
-            el.className = 'wallet-card';
-            el.innerHTML = `
-                <div class="wallet-card-info">
-                    <h3>${card.name}</h3>
-                    <div class="wallet-card-balance">${formatMoney(card.balance)}</div>
-                </div>
-                <div class="wallet-card-actions">
-                    ${card.websiteUrl ? `<a href="${card.websiteUrl}" target="_blank" class="icon-btn" style="color: var(--accent);" title="Open Website"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>` : ''}
-                    ${card.appUrl ? `<a href="${card.appUrl}" target="_blank" class="icon-btn" style="color: var(--accent);" title="Open App"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></a>` : ''}
-                    <button class="icon-btn" onclick="app.openEditCard('${card.id}')">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                    </button>
-                    <button class="icon-btn text-danger" onclick="app.deleteCard('${card.id}')">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                    </button>
-                </div>
-            `;
-            list.appendChild(el);
+        const grouped = wallets.reduce((acc, card) => {
+            const g = card.group || 'Ungrouped';
+            if(!acc[g]) acc[g] = [];
+            acc[g].push(card);
+            return acc;
+        }, {});
+
+        Object.keys(grouped).sort().forEach(groupName => {
+            const groupWrapper = document.createElement('div');
+            groupWrapper.style.marginBottom = '20px';
+            
+            if (groupName !== 'Ungrouped' || Object.keys(grouped).length > 1) {
+                const header = document.createElement('h3');
+                header.textContent = groupName;
+                header.style.marginBottom = '10px';
+                header.style.fontSize = '14px';
+                header.style.color = 'var(--text-secondary)';
+                header.style.textTransform = 'uppercase';
+                header.style.letterSpacing = '0.5px';
+                groupWrapper.appendChild(header);
+            }
+
+            const grid = document.createElement('div');
+            grid.className = 'card-grid wallet-group';
+            grid.dataset.group = groupName === 'Ungrouped' ? '' : groupName;
+            
+            grouped[groupName].forEach(card => {
+                const el = document.createElement('div');
+                el.className = 'wallet-card';
+                el.dataset.id = card.id;
+                el.style.cursor = 'grab';
+                el.innerHTML = `
+                    <div class="wallet-card-info">
+                        <h3>${card.name}</h3>
+                        <div class="wallet-card-balance">${formatMoney(card.balance)}</div>
+                    </div>
+                    <div class="wallet-card-actions">
+                        ${card.websiteUrl ? `<a href="${card.websiteUrl}" target="_blank" class="icon-btn" style="color: var(--accent);" title="Open Website"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>` : ''}
+                        ${card.appUrl ? `<a href="${card.appUrl}" target="_blank" class="icon-btn" style="color: var(--accent);" title="Open App"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></a>` : ''}
+                        <button class="icon-btn" onclick="app.openEditCard('${card.id}')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        </button>
+                        <button class="icon-btn text-danger" onclick="app.deleteCard('${card.id}')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(el);
+            });
+            groupWrapper.appendChild(grid);
+            list.appendChild(groupWrapper);
+
+            Sortable.create(grid, {
+                group: 'wallet-cards',
+                animation: 150,
+                onEnd: () => {
+                    const newWallets = [];
+                    document.querySelectorAll('.wallet-group').forEach(gEl => {
+                        const gName = gEl.dataset.group;
+                        gEl.querySelectorAll('.wallet-card').forEach(cEl => {
+                            const id = cEl.dataset.id;
+                            const card = wallets.find(w => w.id === id);
+                            if (card) {
+                                card.group = gName || '';
+                                newWallets.push(card);
+                            }
+                        });
+                    });
+                    wallets = newWallets;
+                    saveToLocal();
+                    app.renderWallet();
+                }
+            });
         });
 
         app.updateCardSelects();
@@ -2850,6 +2920,7 @@ const app = {
     handleAddCard: (e) => {
         e.preventDefault();
         const name = document.getElementById('card-name').value;
+        const group = document.getElementById('card-group').value;
         const balance = parseFloat(document.getElementById('card-balance').value);
         const websiteUrl = document.getElementById('card-website').value.trim();
         const appUrl = document.getElementById('card-app').value.trim();
@@ -2857,6 +2928,7 @@ const app = {
         wallets.push({
             id: generateId(),
             name,
+            group,
             balance,
             websiteUrl,
             appUrl
@@ -2881,6 +2953,7 @@ const app = {
         if(!card) return;
         document.getElementById('edit-card-id').value = id;
         document.getElementById('edit-card-name').value = card.name;
+        document.getElementById('edit-card-group').value = card.group || '';
         document.getElementById('edit-card-balance').value = card.balance.toFixed(2);
         document.getElementById('edit-card-website').value = card.websiteUrl || '';
         document.getElementById('edit-card-app').value = card.appUrl || '';
@@ -2903,6 +2976,7 @@ const app = {
         e.preventDefault();
         const id = document.getElementById('edit-card-id').value;
         const newName = document.getElementById('edit-card-name').value;
+        const newGroup = document.getElementById('edit-card-group').value;
         const newBalance = parseFloat(document.getElementById('edit-card-balance').value);
         const websiteUrl = document.getElementById('edit-card-website').value.trim();
         const appUrl = document.getElementById('edit-card-app').value.trim();
@@ -2910,6 +2984,7 @@ const app = {
         const card = wallets.find(w => w.id === id);
         if(card) {
             card.name = newName;
+            card.group = newGroup;
             card.balance = newBalance;
             card.websiteUrl = websiteUrl;
             card.appUrl = appUrl;

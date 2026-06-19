@@ -1149,6 +1149,30 @@ input[type="checkbox"].toggle-slider:checked::after {
             </div>
         </div>
 
+        <div id="retroactive-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Retroactively Apply Receipt</h2>
+                <p>Apply this receipt's total (<span id="retroactive-total" style="font-weight: bold; color: var(--accent);">$0.00</span>) to a card or newly added rewards.</p>
+                <form id="retroactive-form" onsubmit="app.handleRetroactiveApply(event)">
+                    <input type="hidden" id="retroactive-receipt-id">
+                    <div class="input-group">
+                        <label>Deduct from Card</label>
+                        <select id="retroactive-card" class="card-select">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <div id="retroactive-rewards-container" style="margin-top: 15px; display: none;">
+                        <div style="font-weight: 500; margin-bottom: 5px;">Apply to Rewards:</div>
+                        <div id="retroactive-rewards-list" style="display: flex; flex-direction: column; gap: 5px;"></div>
+                    </div>
+                    <div class="modal-actions" style="margin-top: 20px;">
+                        <button type="button" class="btn-text" onclick="ui.hideModal('retroactive-modal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Apply</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div id="checkout-cart-modal" class="modal-overlay">
             <div class="modal">
                 <h2>Checkout Cart</h2>
@@ -2251,6 +2275,17 @@ const app = {
                     `;
                     itemsContainer.appendChild(el);
                 });
+                
+                const applyBtn = document.createElement('button');
+                applyBtn.className = 'btn-text';
+                applyBtn.style.width = '100%';
+                applyBtn.style.marginTop = '10px';
+                applyBtn.style.color = 'var(--accent)';
+                applyBtn.style.border = '1px solid var(--border)';
+                applyBtn.style.borderRadius = '8px';
+                applyBtn.innerText = 'Apply to Card / Reward';
+                applyBtn.onclick = () => app.openRetroactiveModal(receipt.id);
+                itemsContainer.appendChild(applyBtn);
             });
         } else {
             filteredItems.forEach(item => {
@@ -2926,6 +2961,93 @@ const app = {
             app.renderItems();
             app.updateProgress();
         }
+    },
+
+    openRetroactiveModal: (receiptId) => {
+        const shop = shops.find(s => s.id === currentShopId);
+        const receiptItems = shop.items.filter(i => (i.receiptId || 'legacy') === receiptId);
+        const total = receiptItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'actualPrice'), 0);
+        
+        document.getElementById('retroactive-receipt-id').value = receiptId;
+        document.getElementById('retroactive-total').innerText = formatMoney(total);
+        
+        const cardSelect = document.getElementById('retroactive-card');
+        cardSelect.innerHTML = '<option value="">None</option>';
+        wallets.forEach(w => {
+            cardSelect.innerHTML += `<option value="${w.id}">${w.name} (${formatMoney(w.balance)})</option>`;
+        });
+        
+        const rewardsContainer = document.getElementById('retroactive-rewards-container');
+        const rewardsList = document.getElementById('retroactive-rewards-list');
+        rewardsList.innerHTML = '';
+        
+        const now = new Date().toISOString().split('T')[0];
+        let hasRewards = false;
+        rewards.forEach(r => {
+            if (r.linkedShopIds && r.linkedShopIds.includes(currentShopId)) {
+                if ((!r.startDate || r.startDate <= now) && (!r.endDate || r.endDate >= now)) {
+                    hasRewards = true;
+                    rewardsList.innerHTML += `
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                            <input type="checkbox" class="retroactive-reward-cb" value="${r.id}">
+                            ${r.name}
+                        </label>
+                    `;
+                }
+            }
+        });
+        rewardsContainer.style.display = hasRewards ? 'block' : 'none';
+        
+        ui.showModal('retroactive-modal');
+    },
+
+    handleRetroactiveApply: (e) => {
+        e.preventDefault();
+        const receiptId = document.getElementById('retroactive-receipt-id').value;
+        const shop = shops.find(s => s.id === currentShopId);
+        const receiptItems = shop.items.filter(i => (i.receiptId || 'legacy') === receiptId);
+        const total = receiptItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'actualPrice'), 0);
+        
+        const cardId = document.getElementById('retroactive-card').value;
+        if (cardId) {
+            const card = wallets.find(w => w.id === cardId);
+            if (card) {
+                card.balance -= total;
+                const cardName = card.name;
+                const newMethods = receiptItems[0].paymentMethods ? [...receiptItems[0].paymentMethods] : [];
+                newMethods.push(`${cardName} (Retroactive): ${formatMoney(total)}`);
+                receiptItems.forEach(i => {
+                    i.paymentMethods = newMethods;
+                });
+            }
+        }
+        
+        const rewardCbs = document.querySelectorAll('.retroactive-reward-cb');
+        const applyRewardIds = [];
+        const appliedRewardNames = [];
+        rewardCbs.forEach(cb => {
+            if (cb.checked) {
+                applyRewardIds.push(cb.value);
+                appliedRewardNames.push(cb.nextSibling.textContent.trim());
+            }
+        });
+        
+        if (applyRewardIds.length > 0) {
+            const allRewardIds = rewards.map(r => r.id);
+            const optOutIds = allRewardIds.filter(id => !applyRewardIds.includes(id));
+            app.calculatePoints(currentShopId, total, optOutIds);
+            
+            const newMethods = receiptItems[0].paymentMethods ? [...receiptItems[0].paymentMethods] : [];
+            newMethods.push(`Applied to: ${appliedRewardNames.join(', ')}`);
+            receiptItems.forEach(i => {
+                i.paymentMethods = newMethods;
+            });
+        }
+        
+        saveToLocal();
+        ui.hideModal('retroactive-modal');
+        app.renderItems();
+        app.renderWallet();
     },
 
     // --- Wallet ---

@@ -1161,6 +1161,17 @@ input[type="checkbox"].toggle-slider:checked::after {
                             <option value="">None</option>
                         </select>
                     </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Retroactive Discount</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="retroactive-discount-type" class="card-select" style="flex: 1;" onchange="app.updateRetroactiveTotal()">
+                                <option value="none">None</option>
+                                <option value="percent">Percentage Off (%)</option>
+                                <option value="amount">Amount Off ($)</option>
+                            </select>
+                            <input type="number" id="retroactive-discount-value" placeholder="Value" step="0.0001" style="flex: 1; display: none;" oninput="app.updateRetroactiveTotal()">
+                        </div>
+                    </div>
                     <div id="retroactive-rewards-container" style="margin-top: 15px; display: none;">
                         <div style="font-weight: 500; margin-bottom: 5px;">Apply to Rewards:</div>
                         <div id="retroactive-rewards-list" style="display: flex; flex-direction: column; gap: 5px;"></div>
@@ -2963,13 +2974,50 @@ const app = {
         }
     },
 
-    openRetroactiveModal: (receiptId) => {
+    updateRetroactiveTotal: () => {
+        const receiptId = document.getElementById('retroactive-receipt-id').value;
         const shop = shops.find(s => s.id === currentShopId);
+        if (!shop || !receiptId) return 0;
         const receiptItems = shop.items.filter(i => (i.receiptId || 'legacy') === receiptId);
-        const total = receiptItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'actualPrice'), 0);
+        let total = receiptItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'actualPrice'), 0);
+
+        const typeEl = document.getElementById('retroactive-discount-type');
+        const valInput = document.getElementById('retroactive-discount-value');
+        if (typeEl && valInput) {
+            const type = typeEl.value;
+            if (type === 'none') {
+                valInput.style.display = 'none';
+            } else {
+                valInput.style.display = 'block';
+                if (type === 'percent') valInput.placeholder = '% Off';
+                if (type === 'amount') valInput.placeholder = '$ Off';
+            }
+
+            const discountVal = parseFloat(valInput.value) || 0;
+            if (type === 'percent' && discountVal > 0) {
+                total = total * (1 - discountVal / 100);
+            } else if (type === 'amount' && discountVal > 0) {
+                total = Math.max(0, total - discountVal);
+            }
+        }
         
+        const totalEl = document.getElementById('retroactive-total');
+        if (totalEl) totalEl.innerText = formatMoney(total);
+        return total;
+    },
+
+    openRetroactiveModal: (receiptId) => {
         document.getElementById('retroactive-receipt-id').value = receiptId;
-        document.getElementById('retroactive-total').innerText = formatMoney(total);
+        
+        const typeEl = document.getElementById('retroactive-discount-type');
+        const valInput = document.getElementById('retroactive-discount-value');
+        if (typeEl) typeEl.value = 'none';
+        if (valInput) {
+            valInput.value = '';
+            valInput.style.display = 'none';
+        }
+
+        app.updateRetroactiveTotal();
         
         const cardSelect = document.getElementById('retroactive-card');
         cardSelect.innerHTML = '<option value="">None</option>';
@@ -3006,7 +3054,7 @@ const app = {
         const receiptId = document.getElementById('retroactive-receipt-id').value;
         const shop = shops.find(s => s.id === currentShopId);
         const receiptItems = shop.items.filter(i => (i.receiptId || 'legacy') === receiptId);
-        const total = receiptItems.reduce((acc, i) => acc + app.calculateItemTotal(i, 'actualPrice'), 0);
+        const total = app.updateRetroactiveTotal();
         
         const cardId = document.getElementById('retroactive-card').value;
         if (cardId) {
@@ -3126,6 +3174,8 @@ const app = {
             Sortable.create(grid, {
                 group: 'wallet-cards',
                 animation: 150,
+                delay: 200,
+                delayOnTouchOnly: true,
                 onEnd: () => {
                     const newWallets = [];
                     document.querySelectorAll('.wallet-group').forEach(gEl => {
